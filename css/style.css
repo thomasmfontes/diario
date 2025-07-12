@@ -1,0 +1,59 @@
+body {
+    background-color: #ffe6f0; /* rosa clarinho */
+}
+
+.title-font {
+    font-family: 'Pacifico', cursive;
+    color: #e75480; /* rosa forte para título */
+}
+
+.memory-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    border-radius: 1rem; /* mais arredondado */
+}
+
+.memory-card.show {
+    opacity: 1;
+}
+
+.memory-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+}
+
+.heart {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Botão salvar personalizado com rosa e bem arredondado */
+.btn-primary {
+    background-color: #e75480;
+    border-color: #e75480;
+    border-radius: 0.75rem; /* mais arredondado */
+}
+
+.btn-primary:hover {
+    background-color: #d64370;
+    border-color: #d64370;
+}
+
+.text-primary {
+    color: #e75480 !important;
+}
+
+/* Inputs e textarea mais arredondados */
+.form-control {
+    border-radius: 0.75rem;
+}
+
+/* Card geral (formulário) mais arredondado */
+.card {
+    border-radius: 1rem;
+}

@@ -30,7 +30,7 @@ form.addEventListener('submit', async e => {
     const title = document.getElementById('title').value;
     const message = document.getElementById('message').value;
     const memoryDate = document.getElementById('memoryDate').value;
-    const image = imageInput.files[0] ? await toBase64(imageInput.files[0]) : null;
+    const image = imageInput.files[0] ? await toBase64Compressed(imageInput.files[0]) : null;
 
     const memory = { title, message, image, date: memoryDate };
 
@@ -52,7 +52,7 @@ function loadMemories() {
 
 function addMemoryCard({ title, message, image, date, id }) {
     const col = document.createElement('div');
-    col.className = 'col-12 col-md-6';
+    col.className = 'col-12 col-md-6 col-lg-4';
 
     const formattedDate = formatDate(date);
 
@@ -61,7 +61,7 @@ function addMemoryCard({ title, message, image, date, id }) {
     card.innerHTML = `
         <h5 class="card-title text-primary">${title}</h5>
         <p class="card-text">${message}</p>
-        ${image ? `<img src="${image}" class="card-img-top mb-3" alt="memória">` : ''}
+        ${image ? `<img src="${image}" class="memory-photo mb-3" alt="memória">` : ''}
         <div class="d-flex justify-content-between text-muted small">
             <span>${formattedDate}</span>
             <button class="btn btn-sm btn-outline-danger" onclick="showModal('${id}')">Excluir</button>
@@ -96,11 +96,27 @@ function confirmDelete() {
     modal.hide();
 }
 
-function toBase64(file) {
+function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
+        reader.onload = () => {
+            const img = new Image();
+            img.src = reader.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const scaleFactor = maxWidth / img.width;
+                canvas.width = maxWidth;
+                canvas.height = img.height * scaleFactor;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedDataUrl);
+            };
+            img.onerror = reject;
+        };
+        reader.onerror = reject;
     });
 }

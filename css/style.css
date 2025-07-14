@@ -7,6 +7,14 @@ body {
     color: #e75480; /* rosa forte para título */
 }
 
+.tg {
+    font-family: 'Luxurious Script', cursive;
+    font-size: 3rem;
+    color: #c268b7; /* rosa forte */
+    letter-spacing: 0.1rem;
+    margin-bottom: 0px;
+}
+
 .memory-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
     opacity: 0;

@@ -31,8 +31,9 @@ form.addEventListener('submit', async e => {
     const message = document.getElementById('message').value;
     const memoryDate = document.getElementById('memoryDate').value;
     const image = imageInput.files[0] ? await toBase64Compressed(imageInput.files[0]) : null;
-
-    const memory = { title, message, image, date: memoryDate };
+    const autor = document.getElementById('autor').value;
+    
+    const memory = { title, message, image, date: memoryDate, autor };
 
     db.collection('memories').add(memory).then(docRef => {
         addMemoryCard({ ...memory, id: docRef.id });
@@ -50,7 +51,7 @@ function loadMemories() {
     });
 }
 
-function addMemoryCard({ title, message, image, date, id }) {
+function addMemoryCard({ title, message, image, date, autor, id }) {
     const col = document.createElement('div');
     col.className = 'col-12 col-md-6 col-lg-4';
 
@@ -59,7 +60,10 @@ function addMemoryCard({ title, message, image, date, id }) {
     const card = document.createElement('div');
     card.className = 'card memory-card p-3 show';
     card.innerHTML = `
-        <h5 class="card-title text-primary">${title}</h5>
+        <div class="d-flex justify-content-between align-items-start">
+            <h5 class="card-title text-primary">${title}</h5>
+            <div class="autor-dot ${autor === 'Thomas' ? 'dot-thomas' : 'dot-gabriela'}"></div>
+        </div>
         <p class="card-text">${message}</p>
         ${image ? `<img src="${image}" class="memory-photo mb-3" alt="memória">` : ''}
         <div class="d-flex justify-content-between text-muted small">

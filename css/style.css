@@ -61,3 +61,18 @@ body {
 .memory-photo {
     border-radius: 1rem;
 }
+
+.autor-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+.dot-thomas {
+    background-color: #007bff; /* azul */
+}
+
+.dot-gabriela {
+    background-color: #e75480; /* rosa */
+}

@@ -26,8 +26,8 @@ body {
 }
 
 .memory-card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 6px 15px -4px rgba(0, 0, 0, 0.08);
 }
 
 .heart {
@@ -64,6 +64,7 @@ body {
 /* Card geral (formulário) mais arredondado */
 .card {
     border-radius: 1rem;
+    
 }
 
 .memory-photo {

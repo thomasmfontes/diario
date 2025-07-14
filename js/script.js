@@ -13,6 +13,9 @@ const db = firebase.firestore();
 const form = document.getElementById('memoryForm');
 const container = document.getElementById('memoriesContainer');
 const imageInput = document.getElementById('image');
+const orderToggle = document.getElementById('orderToggle');
+const orderIcon = document.getElementById('orderIcon');
+let currentOrder = 'desc';
 let pendingDelete = null;
 
 imageInput.addEventListener('change', () => {
@@ -32,19 +35,24 @@ form.addEventListener('submit', async e => {
     const memoryDate = document.getElementById('memoryDate').value;
     const image = imageInput.files[0] ? await toBase64Compressed(imageInput.files[0]) : null;
     const autor = document.getElementById('autor').value;
-    
+
     const memory = { title, message, image, date: memoryDate, autor };
 
-    db.collection('memories').add(memory).then(docRef => {
-        addMemoryCard({ ...memory, id: docRef.id });
+    db.collection('memories').add(memory).then(() => {
+        loadMemories();
         form.reset();
         imageInput.nextElementSibling.textContent = 'Nenhuma selecionada';
     });
 });
 
+orderToggle.addEventListener('click', () => {
+    currentOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+    loadMemories();
+});
+
 function loadMemories() {
     container.innerHTML = '';
-    db.collection('memories').orderBy('date', 'desc').get().then(snapshot => {
+    db.collection('memories').orderBy('date', currentOrder).get().then(snapshot => {
         snapshot.forEach(doc => {
             addMemoryCard({ ...doc.data(), id: doc.id });
         });

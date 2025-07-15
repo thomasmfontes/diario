@@ -29,6 +29,7 @@ const popupMessageContent = document.getElementById('popupMessageContent');
 let currentOrder = 'asc';
 let pendingDelete = null;
 let currentUser = localStorage.getItem('currentUser');
+let currentMessageDoc = null;
 
 window.addEventListener('load', () => {
     if (!currentUser || (currentUser !== 'Thomas' && currentUser !== 'Gabriela')) {
@@ -139,14 +140,21 @@ function checkForMessage() {
               const doc = snapshot.docs[0];
               const msg = doc.data();
 
+              currentMessageDoc = doc.ref;
+
               popupMessageContent.textContent = msg.text;
               const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
               modal.show();
-
-              doc.ref.update({ read: true });
           }
       });
 }
+
+document.getElementById('markAsReadBtn').addEventListener('click', () => {
+    if (currentMessageDoc) {
+        currentMessageDoc.update({ read: true });
+        currentMessageDoc = null;
+    }
+});
 
 function loadMemories() {
     container.innerHTML = '';

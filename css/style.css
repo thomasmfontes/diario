@@ -120,3 +120,33 @@ body {
 .rotate-180 {
     transform: rotate(180deg);
 }
+
+
+/* Carta surpresa */
+.modal-content.carta {
+    background-color: #fffaf8;
+    border: 2px solid #e75480;
+    border-radius: 1rem;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    padding: 1rem;
+    font-family: 'Luxurious Script', cursive;
+}
+
+.modal-content.carta .modal-title {
+    font-family: 'Pacifico', cursive;
+    font-size: 1.8rem;
+    color: #e75480;
+}
+
+.modal-content.carta .modal-body {
+    color: #555;
+    font-family: 'Georgia', serif;
+}
+
+.modal-content.carta button {
+    transition: transform 0.2s ease;
+}
+
+.modal-content.carta button:hover {
+    transform: scale(1.2);
+}

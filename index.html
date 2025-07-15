@@ -6,23 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nosso Diário</title>
 
-    <!-- Estilos -->
+    <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
+
+    <!-- Fontes & Estilos -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Luxurious+Script&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- Open Graph (Facebook, WhatsApp, etc.) -->
+    <!-- Meta OG -->
     <meta property="og:title" content="Nosso Diário">
     <meta property="og:description" content="Nossos momentos especiais reunidos em um só lugar.">
     <meta property="og:image" content="https://thomasmfontes.github.io/diario/capa.jpg">
     <meta property="og:url" content="https://thomasmfontes.github.io/diario/">
     <meta property="og:type" content="website">
-
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Nosso Diário">
     <meta name="twitter:description" content="Nossos momentos especiais reunidos em um só lugar.">
@@ -31,60 +33,76 @@
 
 <body>
     <div class="container py-5">
+
+        <!-- Header -->
         <header class="text-center mb-3">
             <h1 class="title-font display-4 text-primary">Nosso Diário</h1>
             <p class="lead text-muted">
                 Nossos momentos inesquecíveis
-                <span id="easterEggTrigger" style="cursor: pointer;">❤️</span>
+                <span id="easterEggTrigger" class="pointer">❤️</span>
             </p>
             <p class="tg">T &amp; G</p>
+            <button id="userSwitcher" class="btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-3"
+                title="Trocar usuário" onclick="trocarUsuario()">
+                <i class="bi bi-person-fill"></i>
+            </button>
         </header>
 
+        <!-- Easter Egg Form -->
         <div id="easterEggForm" class="card p-3 mb-4 d-none">
             <h5 class="text-primary">Mensagem surpresa 💌</h5>
-            <form id="sendMessageForm" class="d-flex gap-2">
-                <select id="toUser" class="form-select w-auto">
+            <form id="sendMessageForm" class="d-flex flex-column flex-md-row gap-2">
+                <select id="toUser" class="form-select w-100 w-md-auto">
                     <option value="Gabriela">Para Gabriela</option>
                     <option value="Thomas">Para Thomas</option>
                 </select>
-                <input type="text" id="messageText" class="form-control" placeholder="Digite a mensagem..." required>
-                <button type="submit" class="btn btn-primary">Enviar</button>
+                <input type="text" id="messageText" class="form-control w-100" placeholder="Digite a mensagem..."
+                    required>
+                <button type="submit" class="btn btn-primary w-100 w-md-auto">Enviar</button>
             </form>
         </div>
 
-        <section class="card mb-4">
+        <!-- Nova Memória -->
+        <section class="pointer card mb-4">
             <div class="card-body">
-                <h2 class="h5 text-primary mb-3">Nova Memória</h2>
-                <form id="memoryForm">
-                    <div class="mb-3">
-                        <label for="title" class="form-label">Título</label>
-                        <input type="text" id="title" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="message" class="form-label">Mensagem</label>
-                        <textarea id="message" rows="3" class="form-control" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="memoryDate" class="form-label">Data da memória</label>
-                        <input type="date" id="memoryDate" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="image" class="form-label">Foto (opcional)</label>
-                        <input type="file" id="image" accept="image/*" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label for="autor" class="form-label">Quem registrou</label>
-                        <select id="autor" class="form-select" required>
-                            <option value="">Selecione</option>
-                            <option value="Thomas">Thomas</option>
-                            <option value="Gabriela">Gabriela</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Salvar Memória</button>
-                </form>
+                <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse"
+                    data-bs-target="#memoryFormCollapse" aria-expanded="false">
+                    <h5 class="mb-0 text-primary">Nova Memória</h5>
+                    <i class="bi bi-chevron-down text-primary"></i>
+                </div>
+                <div class="collapse mt-3" id="memoryFormCollapse">
+                    <form id="memoryForm">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Título</label>
+                            <input type="text" id="title" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Mensagem</label>
+                            <textarea id="message" rows="3" class="form-control" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="memoryDate" class="form-label">Data da memória</label>
+                            <input type="date" id="memoryDate" class="pointer form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Foto (opcional)</label>
+                            <input type="file" id="image" accept="image/*" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="autor" class="form-label">Quem registrou</label>
+                            <select id="autor" class="pointer form-select" required>
+                                <option value="">Selecione</option>
+                                <option value="Thomas">Thomas</option>
+                                <option value="Gabriela">Gabriela</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Salvar Memória</button>
+                    </form>
+                </div>
             </div>
         </section>
 
+        <!-- Memórias -->
         <section>
             <div class="card p-3 mb-4">
                 <div class="d-flex justify-content-between align-items-center">
@@ -113,17 +131,15 @@
             <div id="memoriesContainer" class="row g-3"></div>
         </section>
 
-        <!-- Modal de confirmação -->
-        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+        <!-- Modals -->
+        <div class="modal fade" id="confirmModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="confirmModalLabel">Confirmar exclusão</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">Confirmar exclusão</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
-                        Tem certeza que deseja excluir esta memória?
-                    </div>
+                    <div class="modal-body">Tem certeza que deseja excluir esta memória?</div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-danger" onclick="confirmDelete()">Excluir</button>
@@ -132,17 +148,14 @@
             </div>
         </div>
 
-        <div class="modal fade" id="popupMessageModal" tabindex="-1" aria-labelledby="popupMessageModalLabel"
-            aria-hidden="true">
+        <div class="modal fade" id="popupMessageModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="popupMessageModalLabel">Mensagem para você 💌</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        <h5 class="modal-title">Mensagem para você 💌</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body" id="popupMessageContent">
-                        <!-- aqui vai o texto -->
-                    </div>
+                    <div class="modal-body" id="popupMessageContent"></div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
                     </div>
@@ -150,6 +163,26 @@
             </div>
         </div>
 
+        <div class="modal fade" id="userSelectModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title w-100 text-center">Quem está acessando?</h5>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="text-muted mb-4">Escolha quem está usando o diário agora 💌</p>
+                        <button class="btn btn-thomas m-2 px-4 rounded-pill" onclick="setUser('Thomas')">
+                            <i class="bi bi-person-fill"></i> Thomas
+                        </button>
+                        <button class="btn btn-gabriela m-2 px-4 rounded-pill" onclick="setUser('Gabriela')">
+                            <i class="bi bi-person-fill"></i> Gabriela
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
         <footer class="mt-5 text-center text-muted small">
             <p>Nosso Diário © 2025 - Criado com ❤️</p>
         </footer>

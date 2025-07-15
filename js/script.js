@@ -131,30 +131,35 @@ sendMessageForm.addEventListener('submit', e => {
 
 function checkForMessage() {
     db.collection('messages')
-      .where('to', '==', currentUser)
-      .where('read', '==', false)
-      .orderBy('createdAt', 'desc')
-      .limit(1)
-      .onSnapshot(snapshot => {
-          if (!snapshot.empty) {
-              const doc = snapshot.docs[0];
-              const msg = doc.data();
+        .where('to', '==', currentUser)
+        .where('read', '==', false)
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .onSnapshot(snapshot => {
+            if (!snapshot.empty) {
+                const doc = snapshot.docs[0];
+                const msg = doc.data();
 
-              currentMessageDoc = doc.ref;
+                currentMessageDoc = doc.ref;
 
-              popupMessageContent.textContent = msg.text;
-              const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
-              modal.show();
-          }
-      });
+                popupMessageContent.textContent = msg.text;
+                const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
+                modal.show();
+            }
+        });
 }
 
 document.getElementById('markAsReadBtn').addEventListener('click', () => {
     if (currentMessageDoc) {
         currentMessageDoc.update({ read: true });
         currentMessageDoc = null;
+
+        const modalEl = document.getElementById('popupMessageModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
     }
 });
+
 
 function loadMemories() {
     container.innerHTML = '';

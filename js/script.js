@@ -130,21 +130,22 @@ sendMessageForm.addEventListener('submit', e => {
 
 function checkForMessage() {
     db.collection('messages')
-        .where('to', '==', currentUser)
-        .where('read', '==', false)
-        .orderBy('createdAt', 'desc')
-        .limit(1)
-        .get()
-        .then(snapshot => {
-            if (!snapshot.empty) {
-                const doc = snapshot.docs[0];
-                popupMessageContent.textContent = doc.data().text;
+      .where('to', '==', currentUser)
+      .where('read', '==', false)
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .onSnapshot(snapshot => {
+          if (!snapshot.empty) {
+              const doc = snapshot.docs[0];
+              const msg = doc.data();
 
-                new bootstrap.Modal('#popupMessageModal').show();
+              popupMessageContent.textContent = msg.text;
+              const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
+              modal.show();
 
-                doc.ref.update({ read: true });
-            }
-        });
+              doc.ref.update({ read: true });
+          }
+      });
 }
 
 function loadMemories() {

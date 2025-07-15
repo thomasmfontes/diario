@@ -117,7 +117,7 @@ sendMessageForm.addEventListener('submit', e => {
 
     const message = {
         to: toUser.value,
-        from: toUser.value === 'Gabriela' ? 'Thomas' : 'Gabriela',
+        from: currentUser,
         text: messageText.value,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         read: false

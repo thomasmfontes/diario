@@ -65,6 +65,7 @@ function trocarUsuario() {
 function updateUserUI() {
     const badge = document.getElementById('currentUserBadge');
     const switcher = document.getElementById('userSwitcher');
+    const messageToLabel = document.getElementById('messageToLabel');
 
     if (badge) badge.textContent = currentUser;
 
@@ -72,6 +73,20 @@ function updateUserUI() {
         switcher.classList.remove('btn-outline-secondary', 'btn-gabriela', 'btn-thomas');
         if (currentUser === 'Thomas') switcher.classList.add('btn-thomas');
         if (currentUser === 'Gabriela') switcher.classList.add('btn-gabriela');
+    }
+
+    if (toUser && messageToLabel) {
+        const otherUser = currentUser === 'Thomas' ? 'Gabriela' : 'Thomas';
+        toUser.value = otherUser;
+
+        messageToLabel.textContent = otherUser;
+
+        messageToLabel.classList.remove('text-thomas', 'text-gabriela');
+        if (otherUser === 'Thomas') {
+            messageToLabel.classList.add('text-thomas');
+        } else if (otherUser === 'Gabriela') {
+            messageToLabel.classList.add('text-gabriela');
+        }
     }
 }
 
@@ -140,11 +155,14 @@ function checkForMessage() {
                 const doc = snapshot.docs[0];
                 const msg = doc.data();
 
-                currentMessageDoc = doc.ref;
+                // só mostra se não fui eu mesmo que enviei
+                if (msg.from !== currentUser) {
+                    currentMessageDoc = doc.ref;
 
-                popupMessageContent.textContent = msg.text;
-                const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
-                modal.show();
+                    popupMessageContent.textContent = msg.text;
+                    const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
+                    modal.show();
+                }
             }
         });
 }
@@ -159,7 +177,6 @@ document.getElementById('markAsReadBtn').addEventListener('click', () => {
         modal.hide();
     }
 });
-
 
 function loadMemories() {
     container.innerHTML = '';

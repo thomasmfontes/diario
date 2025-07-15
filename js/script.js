@@ -140,8 +140,12 @@ sendMessageForm.addEventListener('submit', e => {
 
     db.collection('messages').add(message).then(() => {
         messageText.value = '';
-        alert('Mensagem enviada! 💌');
+
+        const toastEl = document.getElementById('messageToast');
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
     });
+
 });
 
 function checkForMessage() {

@@ -1,10 +1,10 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyDpGm8cbfEo2HnbAETxev1fZg9M9LDats4",
-  authDomain: "nosso-diario-bdb66.firebaseapp.com",
-  projectId: "nosso-diario-bdb66",
-  storageBucket: "nosso-diario-bdb66.firebasestorage.app",
-  messagingSenderId: "555433356561",
-  appId: "1:555433356561:web:1918c584efe64fb8e8f0b0"
+    apiKey: "AIzaSyDpGm8cbfEo2HnbAETxev1fZg9M9LDats4",
+    authDomain: "nosso-diario-bdb66.firebaseapp.com",
+    projectId: "nosso-diario-bdb66",
+    storageBucket: "nosso-diario-bdb66.firebasestorage.app",
+    messagingSenderId: "555433356561",
+    appId: "1:555433356561:web:1918c584efe64fb8e8f0b0"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -28,191 +28,211 @@ const popupMessageContent = document.getElementById('popupMessageContent');
 
 let currentOrder = 'asc';
 let pendingDelete = null;
+let currentUser = localStorage.getItem('currentUser');
 
-// Detecta usuário atual via ?user=Thomas ou ?user=Gabriela
-const params = new URLSearchParams(window.location.search);
-const currentUser = params.get('user');
-
+// Mostrar modal para escolher usuário, se necessário
 if (!currentUser || (currentUser !== 'Thomas' && currentUser !== 'Gabriela')) {
-  alert('Usuário não especificado! Use ?user=Thomas ou ?user=Gabriela na URL');
+    const modal = new bootstrap.Modal(document.getElementById('userSelectModal'));
+    modal.show();
+} else {
+    loadMemories();
+    checkForMessage();
 }
 
-if (easterEggTrigger) {
-  easterEggTrigger.addEventListener('click', () => {
-    easterEggForm.classList.toggle('d-none');
-  });
+// Define usuário
+function setUser(user) {
+    localStorage.setItem('currentUser', user);
+    currentUser = user;
+    const modal = bootstrap.Modal.getInstance(document.getElementById('userSelectModal'));
+    modal.hide();
+    loadMemories();
+    checkForMessage();
+}
+
+// Trocar usuário
+function trocarUsuario() {
+    localStorage.removeItem('currentUser');
+    const modal = new bootstrap.Modal(document.getElementById('userSelectModal'));
+    modal.show();
+}
+
+if (easterEggTrigger && easterEggForm) {
+    easterEggTrigger.addEventListener('click', () => {
+        easterEggForm.classList.toggle('d-none');
+    });
 }
 
 imageInput.addEventListener('change', () => {
-  const file = imageInput.files[0];
-  imageInput.nextElementSibling.textContent = file ? file.name : 'Nenhuma selecionada';
-});
-
-window.addEventListener('load', () => {
-  loadMemories();
-  checkForMessage();
+    const file = imageInput.files[0];
+    imageInput.nextElementSibling.textContent = file ? file.name : 'Nenhuma selecionada';
 });
 
 form.addEventListener('submit', async e => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const title = document.getElementById('title').value;
-  const message = document.getElementById('message').value;
-  const memoryDate = document.getElementById('memoryDate').value;
-  const image = imageInput.files[0] ? await toBase64Compressed(imageInput.files[0]) : null;
-  const autor = document.getElementById('autor').value;
+    const title = document.getElementById('title').value;
+    const message = document.getElementById('message').value;
+    const memoryDate = document.getElementById('memoryDate').value;
+    const image = imageInput.files[0] ? await toBase64Compressed(imageInput.files[0]) : null;
+    const autor = document.getElementById('autor').value;
 
-  const memory = { title, message, image, date: memoryDate, autor };
+    const memory = { title, message, image, date: memoryDate, autor };
 
-  db.collection('memories').add(memory).then(() => {
-    loadMemories();
-    form.reset();
-    imageInput.nextElementSibling.textContent = 'Nenhuma selecionada';
-  });
+    db.collection('memories').add(memory).then(() => {
+        loadMemories();
+        form.reset();
+        imageInput.nextElementSibling.textContent = 'Nenhuma selecionada';
+    });
 });
 
 orderToggle.addEventListener('click', () => {
-  currentOrder = currentOrder === 'desc' ? 'asc' : 'desc';
-  orderIcon.classList.toggle('rotate-180');
-  loadMemories();
+    currentOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+    orderIcon.classList.toggle('rotate-180');
+    loadMemories();
 });
 
 sendMessageForm.addEventListener('submit', e => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const message = {
-    to: toUser.value,
-    from: toUser.value === 'Gabriela' ? 'Thomas' : 'Gabriela',
-    text: messageText.value,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
+    const message = {
+        to: toUser.value,
+        from: toUser.value === 'Gabriela' ? 'Thomas' : 'Gabriela',
+        text: messageText.value,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        read: false
+    };
 
-  db.collection('messages').add(message).then(() => {
-    messageText.value = '';
-    alert('Mensagem enviada! 💌');
-  });
+    db.collection('messages').add(message).then(() => {
+        messageText.value = '';
+        alert('Mensagem enviada! 💌');
+    });
 });
 
 function checkForMessage() {
-  db.collection('messages')
-    .where('to', '==', currentUser)
-    .orderBy('createdAt', 'desc')
-    .limit(1)
-    .get()
-    .then(snapshot => {
-      if (!snapshot.empty) {
-        const msg = snapshot.docs[0].data();
-        popupMessageContent.textContent = msg.text;
-        const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
-        modal.show();
-      }
-    });
+    db.collection('messages')
+        .where('to', '==', currentUser)
+        .where('read', '==', false)
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+        .then(snapshot => {
+            if (!snapshot.empty) {
+                const doc = snapshot.docs[0];
+                const msg = doc.data();
+
+                popupMessageContent.textContent = msg.text;
+                const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
+                modal.show();
+
+                doc.ref.update({ read: true });
+            }
+        });
 }
 
 function loadMemories() {
-  container.innerHTML = '';
-  document.getElementById('loadingSpinner').classList.remove('d-none');
+    container.innerHTML = '';
+    document.getElementById('loadingSpinner').classList.remove('d-none');
 
-  db.collection('memories').orderBy('date', currentOrder).get().then(snapshot => {
-    let countThomas = 0;
-    let countGabriela = 0;
-    let countTotal = 0;
+    db.collection('memories').orderBy('date', currentOrder).get().then(snapshot => {
+        let countThomas = 0;
+        let countGabriela = 0;
+        let countTotal = 0;
 
-    snapshot.forEach(doc => {
-      const data = { ...doc.data(), id: doc.id };
-      addMemoryCard(data);
-      countTotal++;
-      if (data.autor === 'Thomas') countThomas++;
-      if (data.autor === 'Gabriela') countGabriela++;
+        snapshot.forEach(doc => {
+            const data = { ...doc.data(), id: doc.id };
+            addMemoryCard(data);
+            countTotal++;
+            if (data.autor === 'Thomas') countThomas++;
+            if (data.autor === 'Gabriela') countGabriela++;
+        });
+
+        updateProgressBar(countThomas, countGabriela, countTotal);
+
+        document.getElementById('loadingSpinner').classList.add('d-none');
     });
-
-    updateProgressBar(countThomas, countGabriela, countTotal);
-
-    document.getElementById('loadingSpinner').classList.add('d-none');
-  });
 }
 
 function updateProgressBar(thomasCount, gabrielaCount, total) {
-  const thomasPercent = total ? (thomasCount / total) * 100 : 0;
-  const gabrielaPercent = total ? (gabrielaCount / total) * 100 : 0;
+    const thomasPercent = total ? (thomasCount / total) * 100 : 0;
+    const gabrielaPercent = total ? (gabrielaCount / total) * 100 : 0;
 
-  progressThomas.style.width = `${thomasPercent}%`;
-  progressThomas.textContent = thomasCount || '';
-  progressGabriela.style.width = `${gabrielaPercent}%`;
-  progressGabriela.textContent = gabrielaCount || '';
-  countTotalEl.textContent = total;
+    progressThomas.style.width = `${thomasPercent}%`;
+    progressThomas.textContent = thomasCount || '';
+    progressGabriela.style.width = `${gabrielaPercent}%`;
+    progressGabriela.textContent = gabrielaCount || '';
+    countTotalEl.textContent = total;
 }
 
 function addMemoryCard({ title, message, image, date, autor, id }) {
-  const col = document.createElement('div');
-  col.className = 'col-12 col-md-6 col-lg-4';
+    const col = document.createElement('div');
+    col.className = 'col-12 col-md-6 col-lg-4';
 
-  const formattedDate = formatDate(date);
+    const formattedDate = formatDate(date);
 
-  const card = document.createElement('div');
-  card.className = 'card memory-card p-3 show';
-  card.innerHTML = `
-    <div class="d-flex justify-content-between align-items-start">
-      <h5 class="card-title text-primary">${title}</h5>
-      <div class="autor-dot ${autor === 'Thomas' ? 'dot-thomas' : 'dot-gabriela'}"></div>
-    </div>
-    <p class="card-text">${message}</p>
-    ${image ? `<img src="${image}" class="memory-photo mb-3" alt="memória">` : ''}
-    <div class="d-flex justify-content-between text-muted small">
-      <span>${formattedDate}</span>
-      <button class="btn btn-sm btn-outline-danger" onclick="showModal('${id}')">Excluir</button>
-    </div>
-  `;
+    const card = document.createElement('div');
+    card.className = 'card memory-card p-3 show';
+    card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+            <h5 class="card-title text-primary">${title}</h5>
+            <div class="autor-dot ${autor === 'Thomas' ? 'dot-thomas' : 'dot-gabriela'}"></div>
+        </div>
+        <p class="card-text">${message}</p>
+        ${image ? `<img src="${image}" class="memory-photo mb-3" alt="memória">` : ''}
+        <div class="d-flex justify-content-between text-muted small">
+            <span>${formattedDate}</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="showModal('${id}')">Excluir</button>
+        </div>
+    `;
 
-  col.appendChild(card);
-  container.prepend(col);
+    col.appendChild(card);
+    container.prepend(col);
 
-  setTimeout(() => card.style.opacity = 1, 50);
+    setTimeout(() => card.style.opacity = 1, 50);
 }
 
 function formatDate(dateStr) {
-  const [yyyy, mm, dd] = dateStr.split('-');
-  return `${dd}-${mm}-${yyyy}`;
+    const [yyyy, mm, dd] = dateStr.split('-');
+    return `${dd}-${mm}-${yyyy}`;
 }
 
 function showModal(id) {
-  pendingDelete = id;
-  const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-  modal.show();
+    pendingDelete = id;
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
 }
 
 function confirmDelete() {
-  if (pendingDelete) {
-    db.collection('memories').doc(pendingDelete).delete().then(() => {
-      loadMemories();
-    });
-    pendingDelete = null;
-  }
-  const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-  modal.hide();
+    if (pendingDelete) {
+        db.collection('memories').doc(pendingDelete).delete().then(() => {
+            loadMemories();
+        });
+        pendingDelete = null;
+    }
+    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+    modal.hide();
 }
 
 function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const img = new Image();
-      img.src = reader.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const scaleFactor = maxWidth / img.width;
-        canvas.width = maxWidth;
-        canvas.height = img.height * scaleFactor;
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const img = new Image();
+            img.src = reader.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const scaleFactor = maxWidth / img.width;
+                canvas.width = maxWidth;
+                canvas.height = img.height * scaleFactor;
 
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressedDataUrl);
-      };
-      img.onerror = reject;
-    };
-    reader.onerror = reject;
-  });
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedDataUrl);
+            };
+            img.onerror = reject;
+        };
+        reader.onerror = reject;
+    });
 }

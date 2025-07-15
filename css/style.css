@@ -2,6 +2,14 @@ body {
     background-color: #ffe6f0; /* rosa clarinho */
 }
 
+.tg {
+    font-family: 'Luxurious Script', cursive;
+    font-size: 3rem;
+    color: #c268b7; /* rosa forte */
+    letter-spacing: 0.1rem;
+    margin-bottom: 0px;
+}
+
 .title-font {
     font-family: 'Pacifico', cursive;
     color: #e75480; /* rosa forte para título */
@@ -38,12 +46,12 @@ body {
     color: white;
 }
 
-.tg {
-    font-family: 'Luxurious Script', cursive;
-    font-size: 3rem;
-    color: #c268b7; /* rosa forte */
-    letter-spacing: 0.1rem;
-    margin-bottom: 0px;
+.text-thomas {
+    color: #007bff; /* azul */
+}
+
+.text-gabriela {
+    color: #e75480; /* rosa */
 }
 
 .memory-card {

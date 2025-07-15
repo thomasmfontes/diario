@@ -7,6 +7,37 @@ body {
     color: #e75480; /* rosa forte para título */
 }
 
+.modal-title {
+    font-family: 'Pacifico', cursive;
+    color: #e75480; /* azul principal */
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.btn-thomas {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+}
+
+.btn-thomas:hover {
+    background-color: #0b5ed7;
+    color: white;
+}
+
+.btn-gabriela {
+    background-color: #e75480;
+    color: #fff;
+    border: none;
+}
+
+.btn-gabriela:hover {
+    background-color: #d64370;
+    color: white;
+}
+
 .tg {
     font-family: 'Luxurious Script', cursive;
     font-size: 3rem;
@@ -65,7 +96,6 @@ body {
 /* Card geral (formulário) mais arredondado */
 .card {
     border-radius: 1rem;
-    
 }
 
 .memory-photo {

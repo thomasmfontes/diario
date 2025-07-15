@@ -33,9 +33,24 @@
     <div class="container py-5">
         <header class="text-center mb-3">
             <h1 class="title-font display-4 text-primary">Nosso Diário</h1>
-            <p class="lead text-muted">Nossos momentos inesquecíveis ❤️</p>
+            <p class="lead text-muted">
+                Nossos momentos inesquecíveis
+                <span id="easterEggTrigger" style="cursor: pointer;">❤️</span>
+            </p>
             <p class="tg">T &amp; G</p>
         </header>
+
+        <div id="easterEggForm" class="card p-3 mb-4 d-none">
+            <h5 class="text-primary">Mensagem surpresa 💌</h5>
+            <form id="sendMessageForm" class="d-flex gap-2">
+                <select id="toUser" class="form-select w-auto">
+                    <option value="Gabriela">Para Gabriela</option>
+                    <option value="Thomas">Para Thomas</option>
+                </select>
+                <input type="text" id="messageText" class="form-control" placeholder="Digite a mensagem..." required>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </form>
+        </div>
 
         <section class="card mb-4">
             <div class="card-body">
@@ -112,6 +127,24 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-danger" onclick="confirmDelete()">Excluir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="popupMessageModal" tabindex="-1" aria-labelledby="popupMessageModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="popupMessageModalLabel">Mensagem para você 💌</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body" id="popupMessageContent">
+                        <!-- aqui vai o texto -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
                     </div>
                 </div>
             </div>

@@ -30,37 +30,57 @@ let currentOrder = 'asc';
 let pendingDelete = null;
 let currentUser = localStorage.getItem('currentUser');
 
-// Mostrar modal para escolher usuário, se necessário
-if (!currentUser || (currentUser !== 'Thomas' && currentUser !== 'Gabriela')) {
-    const modal = new bootstrap.Modal(document.getElementById('userSelectModal'));
-    modal.show();
-} else {
+window.addEventListener('load', () => {
+    if (!currentUser || (currentUser !== 'Thomas' && currentUser !== 'Gabriela')) {
+        new bootstrap.Modal('#userSelectModal').show();
+    } else {
+        init();
+    }
+    resetEasterEgg();
+});
+
+function init() {
+    updateUserUI();
     loadMemories();
     checkForMessage();
 }
 
-// Define usuário
 function setUser(user) {
     localStorage.setItem('currentUser', user);
     currentUser = user;
-    const modal = bootstrap.Modal.getInstance(document.getElementById('userSelectModal'));
-    modal.hide();
-    loadMemories();
-    checkForMessage();
+
+    bootstrap.Modal.getInstance('#userSelectModal').hide();
+
+    resetEasterEgg();
+    init();
 }
 
-// Trocar usuário
 function trocarUsuario() {
     localStorage.removeItem('currentUser');
-    const modal = new bootstrap.Modal(document.getElementById('userSelectModal'));
-    modal.show();
+    resetEasterEgg();
+    new bootstrap.Modal('#userSelectModal').show();
 }
 
-if (easterEggTrigger && easterEggForm) {
-    easterEggTrigger.addEventListener('click', () => {
-        easterEggForm.classList.toggle('d-none');
-    });
+function updateUserUI() {
+    const badge = document.getElementById('currentUserBadge');
+    const switcher = document.getElementById('userSwitcher');
+
+    if (badge) badge.textContent = currentUser;
+
+    if (switcher) {
+        switcher.classList.remove('btn-outline-secondary', 'btn-gabriela', 'btn-thomas');
+        if (currentUser === 'Thomas') switcher.classList.add('btn-thomas');
+        if (currentUser === 'Gabriela') switcher.classList.add('btn-gabriela');
+    }
 }
+
+function resetEasterEgg() {
+    easterEggForm?.classList.add('d-none');
+}
+
+easterEggTrigger?.addEventListener('click', () => {
+    easterEggForm?.classList.toggle('d-none');
+});
 
 imageInput.addEventListener('change', () => {
     const file = imageInput.files[0];
@@ -70,13 +90,13 @@ imageInput.addEventListener('change', () => {
 form.addEventListener('submit', async e => {
     e.preventDefault();
 
-    const title = document.getElementById('title').value;
-    const message = document.getElementById('message').value;
-    const memoryDate = document.getElementById('memoryDate').value;
-    const image = imageInput.files[0] ? await toBase64Compressed(imageInput.files[0]) : null;
-    const autor = document.getElementById('autor').value;
-
-    const memory = { title, message, image, date: memoryDate, autor };
+    const memory = {
+        title: form.title.value,
+        message: form.message.value,
+        date: form.memoryDate.value,
+        autor: form.autor.value,
+        image: imageInput.files[0] ? await toBase64Compressed(imageInput.files[0]) : null
+    };
 
     db.collection('memories').add(memory).then(() => {
         loadMemories();
@@ -118,11 +138,9 @@ function checkForMessage() {
         .then(snapshot => {
             if (!snapshot.empty) {
                 const doc = snapshot.docs[0];
-                const msg = doc.data();
+                popupMessageContent.textContent = doc.data().text;
 
-                popupMessageContent.textContent = msg.text;
-                const modal = new bootstrap.Modal(document.getElementById('popupMessageModal'));
-                modal.show();
+                new bootstrap.Modal('#popupMessageModal').show();
 
                 doc.ref.update({ read: true });
             }
@@ -134,9 +152,7 @@ function loadMemories() {
     document.getElementById('loadingSpinner').classList.remove('d-none');
 
     db.collection('memories').orderBy('date', currentOrder).get().then(snapshot => {
-        let countThomas = 0;
-        let countGabriela = 0;
-        let countTotal = 0;
+        let countThomas = 0, countGabriela = 0, countTotal = 0;
 
         snapshot.forEach(doc => {
             const data = { ...doc.data(), id: doc.id };
@@ -167,8 +183,6 @@ function addMemoryCard({ title, message, image, date, autor, id }) {
     const col = document.createElement('div');
     col.className = 'col-12 col-md-6 col-lg-4';
 
-    const formattedDate = formatDate(date);
-
     const card = document.createElement('div');
     card.className = 'card memory-card p-3 show';
     card.innerHTML = `
@@ -179,7 +193,7 @@ function addMemoryCard({ title, message, image, date, autor, id }) {
         <p class="card-text">${message}</p>
         ${image ? `<img src="${image}" class="memory-photo mb-3" alt="memória">` : ''}
         <div class="d-flex justify-content-between text-muted small">
-            <span>${formattedDate}</span>
+            <span>${formatDate(date)}</span>
             <button class="btn btn-sm btn-outline-danger" onclick="showModal('${id}')">Excluir</button>
         </div>
     `;
@@ -197,19 +211,15 @@ function formatDate(dateStr) {
 
 function showModal(id) {
     pendingDelete = id;
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    modal.show();
+    new bootstrap.Modal('#confirmModal').show();
 }
 
 function confirmDelete() {
     if (pendingDelete) {
-        db.collection('memories').doc(pendingDelete).delete().then(() => {
-            loadMemories();
-        });
+        db.collection('memories').doc(pendingDelete).delete().then(() => loadMemories());
         pendingDelete = null;
     }
-    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-    modal.hide();
+    bootstrap.Modal.getInstance('#confirmModal').hide();
 }
 
 function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
@@ -228,8 +238,7 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressedDataUrl);
+                resolve(canvas.toDataURL('image/jpeg', quality));
             };
             img.onerror = reject;
         };

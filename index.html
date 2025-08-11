@@ -45,6 +45,14 @@
                 <span id="easterEggTrigger" class="pointer">❤️</span>
             </p>
             <p class="tg">T &amp; G</p>
+
+            <!-- Botão Cartinhas -->
+            <button id="btn-cartinhas" class="btn btn-outline-secondary btn-sm position-absolute top-0 start-0 m-3"
+                title="Ver cartinhas">
+                <i class="bi bi-envelope-heart"></i>
+            </button>
+
+            <!-- Botão Trocar Usuário -->
             <button id="userSwitcher" class="btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-3"
                 title="Trocar usuário" onclick="trocarUsuario()">
                 <i class="bi bi-person-fill"></i>
@@ -66,8 +74,8 @@
         </div>
 
         <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-            <div id="messageToast" class="toast align-items-center text-bg-success border-0" role="alert"
-                aria-live="assertive" aria-atomic="true">
+            <div id="messageToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive"
+                aria-atomic="true">
                 <div class="d-flex">
                     <div class="toast-body">
                         Mensagem enviada! 💌
@@ -194,6 +202,44 @@
                         <button class="btn btn-gabriela m-2 px-4 rounded-pill" onclick="setUser('Gabriela')">
                             <i class="bi bi-person-fill"></i> Gabriela
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Lista de Cartinhas -->
+        <div class="modal fade" id="cartinhasModal" tabindex="-1" aria-labelledby="cartinhasTitle">
+            <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down modal-lg">
+                <div class="modal-content carta">
+                    <div class="modal-header border-0 align-items-center position-relative shadow-sm">
+                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"
+                            aria-label="Fechar"></button>
+
+                        <div class="w-100">
+                            <h5 id="cartinhasTitle" class="modal-title w-100 text-center mb-2">💌 Cartinhas</h5>
+                            <div class="d-flex justify-content-center">
+                                <div class="btn-group btn-group-sm filtro-group" role="group" aria-label="Filtro de cartinhas">
+                                    <input type="radio" class="btn-check" name="filtroCartinhas" id="filtroTodas" value="todas" checked>
+                                    <label class="btn filtro-pill todas" for="filtroTodas">Todas</label>
+                                
+                                    <input type="radio" class="btn-check" name="filtroCartinhas" id="filtroThomas" value="Thomas">
+                                    <label class="btn filtro-pill thomas" for="filtroThomas">Thomas</label>
+                                
+                                    <input type="radio" class="btn-check" name="filtroCartinhas" id="filtroGabriela" value="Gabriela">
+                                    <label class="btn filtro-pill gabriela" for="filtroGabriela">Gabriela</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+        
+                    <div class="modal-body">
+                        <div id="skeleton-cartinhas" class="d-none">
+                            <div class="skeleton-line mb-2"></div>
+                            <div class="skeleton-line mb-2"></div>
+                            <div class="skeleton-line mb-2"></div>
+                        </div>
+                        <div id="lista-cartinhas" class="carta-list"></div>
                     </div>
                 </div>
             </div>

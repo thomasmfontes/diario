@@ -26,10 +26,20 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
+// --- Cartinhas (lista + filtro radios) ---
+const btnCartinhas = document.getElementById('btn-cartinhas');
+const cartinhasModalEl = document.getElementById('cartinhasModal');
+const cartinhasModal = new bootstrap.Modal(cartinhasModalEl);
+
+const listaCartinhas = document.getElementById('lista-cartinhas');
+const skeletonCartinhas = document.getElementById('skeleton-cartinhas');
+const filtroRadios = document.querySelectorAll('input[name="filtroCartinhas"]');
+
 let currentOrder = 'asc';
 let pendingDelete = null;
 let currentUser = localStorage.getItem('currentUser');
 let currentMessageDoc = null;
+let unsubscribeCartinhas = null;
 
 window.addEventListener('load', () => {
     if (!currentUser || (currentUser !== 'Thomas' && currentUser !== 'Gabriela')) {
@@ -44,6 +54,81 @@ function init() {
     updateUserUI();
     loadMemories();
     checkForMessage();
+}
+
+// Abrir modal + aplicar filtro salvo
+btnCartinhas.addEventListener('click', () => {
+    cartinhasModal.show();
+    const salvo = localStorage.getItem('filtroCartinhas') || 'todas';
+    const r = document.querySelector(`input[name="filtroCartinhas"][value="${salvo}"]`);
+    if (r) r.checked = true;
+    carregarCartinhas(salvo);
+});
+
+// Troca de filtro
+filtroRadios.forEach(r =>
+    r.addEventListener('change', (e) => {
+        const v = e.target.value;
+        localStorage.setItem('filtroCartinhas', v);
+        carregarCartinhas(v);
+    })
+);
+
+// Evita warning de aria-hidden, limpa listener e devolve foco
+cartinhasModalEl.addEventListener('hide.bs.modal', () => {
+    const f = document.activeElement;
+    if (f && cartinhasModalEl.contains(f)) f.blur();
+});
+cartinhasModalEl.addEventListener('hidden.bs.modal', () => {
+    if (unsubscribeCartinhas) { unsubscribeCartinhas(); unsubscribeCartinhas = null; }
+    btnCartinhas?.focus();
+});
+
+// Carrega/observa cartinhas
+function carregarCartinhas(destino) {
+    if (unsubscribeCartinhas) { unsubscribeCartinhas(); unsubscribeCartinhas = null; }
+
+    let ref = db.collection('messages');
+    if (destino && destino !== 'todas') ref = ref.where('to', '==', destino); // precisa índice com orderBy
+    ref = ref.orderBy('createdAt', 'desc');
+
+    listaCartinhas.innerHTML = '';
+    skeletonCartinhas?.classList.remove('d-none');
+
+    unsubscribeCartinhas = ref.onSnapshot(snap => {
+        skeletonCartinhas?.classList.add('d-none');
+        listaCartinhas.innerHTML = '';
+
+        if (snap.empty) {
+            listaCartinhas.innerHTML = '<div class="text-center text-muted py-3">Nenhuma cartinha.</div>';
+            return;
+        }
+
+        snap.forEach(doc => {
+            const d = doc.data();
+            const _t = d.createdAt?.toDate ? d.createdAt.toDate() : null;
+            const dt = _t
+                ? `${_t.toLocaleDateString('pt-BR')} - ${_t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                : '(sem data)';
+            const chipParaClass = d.to === 'Thomas' ? 'para-thomas' : 'para-gabriela';
+
+            const el = document.createElement('div');
+            el.className = 'carta-item';
+            el.innerHTML = `
+        <div class="linha">
+          <span class="chip de">De: ${d.from || '-'}</span>
+          <span class="chip ${chipParaClass}">Para: ${d.to || '-'}</span>
+        </div>
+        <div class="texto">${(d.text || '').trim()}</div>
+        <div class="data">${dt}</div>
+      `;
+            listaCartinhas.appendChild(el);
+        });
+    }, err => {
+        skeletonCartinhas?.classList.add('d-none');
+        console.error(err);
+        listaCartinhas.innerHTML = `<div class="text-danger">Erro: ${err.message}</div>`;
+    });
 }
 
 function setUser(user) {

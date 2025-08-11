@@ -106,24 +106,25 @@ function carregarCartinhas(destino) {
 
         snap.forEach(doc => {
             const d = doc.data();
-            const _t = d.createdAt?.toDate ? d.createdAt.toDate() : null;
-            const dt = _t
-                ? `${_t.toLocaleDateString('pt-BR')} - ${_t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+            const dtObj = d.createdAt?.toDate ? d.createdAt.toDate() : null;
+            const dt = dtObj
+                ? `${dtObj.toLocaleDateString('pt-BR')} - ${dtObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
                 : '(sem data)';
-            const chipParaClass = d.to === 'Thomas' ? 'para-thomas' : 'para-gabriela';
 
             const el = document.createElement('div');
             el.className = 'carta-item';
             el.innerHTML = `
-        <div class="linha">
-          <span class="chip de">De: ${d.from || '-'}</span>
-          <span class="chip ${chipParaClass}">Para: ${d.to || '-'}</span>
-        </div>
-        <div class="texto">${(d.text || '').trim()}</div>
-        <div class="data">${dt}</div>
-      `;
+    <div class="linha">
+      <span class="chip de">De: ${d.from || '-'}</span>
+      <span class="chip ${d.to === 'Thomas' ? 'para-thomas' : 'para-gabriela'}">Para: ${d.to || '-'}</span>
+      <span class="chip status ${d.read ? 'lida' : 'nao-lida'}">${d.read ? 'Lida' : 'Não lida'}</span>
+    </div>
+    <div class="texto">${(d.text || '').trim()}</div>
+    <div class="data">${dt}</div>
+  `;
             listaCartinhas.appendChild(el);
         });
+        
     }, err => {
         skeletonCartinhas?.classList.add('d-none');
         console.error(err);

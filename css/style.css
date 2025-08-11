@@ -366,3 +366,18 @@ body {
         transition:none; 
     } 
 }
+
+.chip.status { 
+    border:1px solid #6c757d; 
+    color:#6c757d; 
+}
+
+.chip.status.lida { 
+    border-color:#198754; 
+    color:#198754; 
+}
+
+.chip.status.nao-lida { 
+    border-color:#6c757d; 
+    color:#6c757d; 
+}

@@ -1,23 +1,27 @@
 body {
-    background-color: #ffe6f0; /* rosa clarinho */
+    background-color: #ffe6f0;
+    /* rosa clarinho */
 }
 
 .tg {
     font-family: 'Luxurious Script', cursive;
     font-size: 3rem;
-    color: #c268b7; /* rosa forte */
+    color: #c268b7;
+    /* rosa forte */
     letter-spacing: 0.1rem;
     margin-bottom: 0px;
 }
 
 .title-font {
     font-family: 'Pacifico', cursive;
-    color: #e75480; /* rosa forte para título */
+    color: #e75480;
+    /* rosa forte para título */
 }
 
 .modal-title {
     font-family: 'Pacifico', cursive;
-    color: #e75480; /* azul principal */
+    color: #e75480;
+    /* azul principal */
 }
 
 .pointer {
@@ -47,17 +51,20 @@ body {
 }
 
 .text-thomas {
-    color: #007bff; /* azul */
+    color: #007bff;
+    /* azul */
 }
 
 .text-gabriela {
-    color: #e75480; /* rosa */
+    color: #e75480;
+    /* rosa */
 }
 
 .memory-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
     opacity: 0;
-    border-radius: 1rem; /* mais arredondado */
+    border-radius: 1rem;
+    /* mais arredondado */
 }
 
 .memory-card.show {
@@ -75,16 +82,25 @@ body {
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* Botão salvar personalizado com rosa e bem arredondado */
 .btn-primary {
     background-color: #e75480;
     border-color: #e75480;
-    border-radius: 0.75rem; /* mais arredondado */
+    border-radius: 0.75rem;
+    /* mais arredondado */
 }
 
 .btn-primary:hover {
@@ -118,11 +134,13 @@ body {
 }
 
 .dot-thomas {
-    background-color: #007bff; /* azul */
+    background-color: #007bff;
+    /* azul */
 }
 
 .dot-gabriela {
-    background-color: #e75480; /* rosa */
+    background-color: #e75480;
+    /* rosa */
 }
 
 .rotate-180 {
@@ -135,7 +153,7 @@ body {
     background-color: #fffaf8;
     border: 2px solid #e75480;
     border-radius: 1rem;
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     padding: 1rem;
     font-family: 'Luxurious Script', cursive;
 }

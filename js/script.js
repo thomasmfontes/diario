@@ -26,6 +26,144 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
+// ================= IA local no navegador (GRÁTIS) =================
+// Rodando 100% no browser via Transformers.js (ESM) + modelo leve T5.
+// Teste/publicação em HTTPS (GitHub Pages).
+
+(function () {
+  // --- Pega campos existentes ---
+  const input  = document.getElementById('messageText');
+  if (!input) return;
+
+  let select = document.getElementById('tone');
+  let btn    = document.getElementById('aiSuggestBtn');
+  let status = document.getElementById('aiStatus');
+
+  // --- Se controles não estiverem no HTML, injeta (opcional) ---
+  if (!select || !btn || !status) {
+    const controls = document.createElement('div');
+    controls.className = 'd-flex gap-2 mt-2 align-items-center flex-wrap';
+
+    select = document.createElement('select');
+    select.id = 'tone';
+    select.className = 'form-select';
+    select.style.maxWidth = '220px';
+    ['romântica','fofa','sincera','engraçada','apaziguadora'].forEach((t, i) => {
+      const op = document.createElement('option');
+      op.value = t; op.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+      if (i === 0) op.selected = true;
+      select.appendChild(op);
+    });
+
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'aiSuggestBtn';
+    btn.className = 'btn btn-outline-secondary';
+    btn.textContent = 'Aprimorar ✨';
+
+    status = document.createElement('small');
+    status.id = 'aiStatus';
+    status.className = 'text-muted d-block';
+    status.style.minHeight = '1.25rem';
+
+    input.insertAdjacentElement('afterend', controls);
+    controls.appendChild(select);
+    controls.appendChild(btn);
+    controls.insertAdjacentElement('afterend', status);
+  }
+
+  // --- Config do import ESM bundlado (funciona no Pages/HTTPS) ---
+  const TRANSFORMERS_CDN = 'https://esm.sh/@xenova/transformers@3.0.0?bundle';
+
+  let tf = null;           // módulo transformers
+  let textGenPipe = null;  // pipeline
+  let loading = false;
+
+  function setStatus(msg) { if (status) status.textContent = msg || ''; }
+
+  async function ensureLib() {
+    if (tf) return tf;
+    setStatus('Carregando IA...');
+    tf = await import(TRANSFORMERS_CDN);
+
+    // Buscar modelos direto do Hugging Face; cache no navegador
+    tf.env.allowLocalModels = false;
+    tf.env.allowRemoteModels = true;
+    tf.env.useBrowserCache  = true;
+    tf.env.remoteModelPath  = 'https://huggingface.co';
+    tf.env.backends.onnx.wasm.proxy = true; // WASM em worker
+
+    setStatus('IA pronta ✨');
+    return tf;
+  }
+
+  async function getPipe() {
+    if (textGenPipe) return textGenPipe;
+    if (loading) return textGenPipe;
+    loading = true;
+
+    const { pipeline } = await ensureLib();
+
+    // Modelo estável e leve p/ reescrita/correção
+    textGenPipe = await pipeline(
+      'text2text-generation',
+      'Xenova/LaMini-Flan-T5-248M',
+      { quantized: true }
+    );
+    return textGenPipe;
+  }
+
+  // Invocador resiliente (diferenças de API entre versões)
+  async function runPipe(p, input, options) {
+    if (typeof p === 'function')           return await p(input, options);
+    if (typeof p?.call === 'function')     return await p.call(input, options);
+    if (typeof p?._call === 'function')    return await p._call(input, options);
+    if (typeof p?.execute === 'function')  return await p.execute(input, options);
+    if (typeof p?.generate === 'function') return await p.generate(input, options);
+    throw new Error('Pipeline inválida/indisponível');
+  }
+
+  function buildPrompt(texto, tom) {
+    return `Parafraseie em pt-BR com tom ${tom}, corrija gramática e acentuação, mantenha o sentido e o nome da pessoa, máximo 240 caracteres. Texto: ${texto}`;
+  }
+
+  async function improve(text, tone) {
+    const p = await getPipe();
+    const out = await runPipe(p, buildPrompt(text, tone), {
+      max_new_tokens: 96,
+      temperature: 0.6,
+      top_p: 0.9
+    });
+
+    let txt = (Array.isArray(out) ? out[0]?.generated_text : out?.generated_text) || '';
+    txt = txt.replace(/^["“”']+|["“”']+$/g, '').trim();
+    if (txt.length > 240) txt = txt.slice(0, 240).trim();
+    return txt;
+  }
+
+  btn.addEventListener('click', async () => {
+    const original = (input.value || '').trim();
+    if (!original) { setStatus('Digite algo primeiro 🙂'); input.focus(); return; }
+
+    try {
+      setStatus('Gerando sugestão...');
+      const suggestion = await improve(original, select.value);
+      input.value = suggestion || original;
+      setStatus('Sugestão aplicada.');
+    } catch (e) {
+      console.error(e);
+      setStatus('Erro na IA. Tente novamente.');
+    }
+  });
+
+  // Pré-carrega a lib quando ocioso (opcional)
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => ensureLib().catch(console.warn));
+  } else {
+    setTimeout(() => ensureLib().catch(console.warn), 1200);
+  }
+})();
+
 // --- Cartinhas (lista + filtro radios) ---
 const btnCartinhas = document.getElementById('btn-cartinhas');
 const cartinhasModalEl = document.getElementById('cartinhasModal');
@@ -365,4 +503,5 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
         };
         reader.onerror = reject;
     });
+
 }

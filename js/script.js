@@ -26,12 +26,12 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
-// ================= IA local no navegador (GRÁTIS) =================
-// Rodando 100% no browser via Transformers.js (ESM) + modelo leve T5.
-// Teste/publicação em HTTPS (GitHub Pages).
+// ================= IA no navegador (GRÁTIS) =================
+// Transformers.js via import() com fallback de CDNs + T5 leve (LaMini-Flan-248M).
+// Observação: melhor rodar em HTTPS (GitHub Pages). Em localhost pode funcionar,
+// mas alguns bloqueios de CORS/adblock podem atrapalhar.
 
 (function () {
-  // --- Pega campos existentes ---
   const input  = document.getElementById('messageText');
   if (!input) return;
 
@@ -39,7 +39,7 @@ const popupMessageContent = document.getElementById('popupMessageContent');
   let btn    = document.getElementById('aiSuggestBtn');
   let status = document.getElementById('aiStatus');
 
-  // --- Se controles não estiverem no HTML, injeta (opcional) ---
+  // Injeta controles se não estiverem no HTML
   if (!select || !btn || !status) {
     const controls = document.createElement('div');
     controls.className = 'd-flex gap-2 mt-2 align-items-center flex-wrap';
@@ -72,48 +72,60 @@ const popupMessageContent = document.getElementById('popupMessageContent');
     controls.insertAdjacentElement('afterend', status);
   }
 
-  // --- Config do import ESM bundlado (funciona no Pages/HTTPS) ---
-  const TRANSFORMERS_CDN = 'https://esm.sh/@xenova/transformers@3.0.0?bundle';
+  // -------- import dinâmico com fallback de CDNs --------
+  const CDN_TRIES = [
+    'https://esm.sh/@xenova/transformers@3.0.0?bundle',
+    'https://unpkg.com/@xenova/transformers@3.0.0?module',
+    'https://cdn.jsdelivr.net/npm/@xenova/transformers@3.0.0'
+  ];
 
-  let tf = null;           // módulo transformers
-  let textGenPipe = null;  // pipeline
+  let tf = null;          // módulo transformers
+  let pipeInst = null;    // pipeline instanciada
   let loading = false;
 
-  function setStatus(msg) { if (status) status.textContent = msg || ''; }
+  function setStatus(m){ if (status) status.textContent = m || ''; }
 
-  async function ensureLib() {
+  async function importTransformers() {
     if (tf) return tf;
     setStatus('Carregando IA...');
-    tf = await import(TRANSFORMERS_CDN);
+    let lastErr;
+    for (const url of CDN_TRIES) {
+      try {
+        // some CDNs exigem sufixo explicitamente ESM; os dois primeiros já lidam com isso
+        tf = await import(url);
+        break;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    if (!tf) throw lastErr || new Error('Falha ao importar @xenova/transformers');
 
-    // Buscar modelos direto do Hugging Face; cache no navegador
+    // Configurar para buscar modelos do Hugging Face e usar cache
     tf.env.allowLocalModels = false;
     tf.env.allowRemoteModels = true;
     tf.env.useBrowserCache  = true;
     tf.env.remoteModelPath  = 'https://huggingface.co';
-    tf.env.backends.onnx.wasm.proxy = true; // WASM em worker
+    tf.env.backends.onnx.wasm.proxy = true;
 
     setStatus('IA pronta ✨');
     return tf;
   }
 
   async function getPipe() {
-    if (textGenPipe) return textGenPipe;
-    if (loading) return textGenPipe;
+    if (pipeInst) return pipeInst;
+    if (loading) return pipeInst;
     loading = true;
 
-    const { pipeline } = await ensureLib();
+    const { pipeline } = await importTransformers();
 
-    // Modelo estável e leve p/ reescrita/correção
-    textGenPipe = await pipeline(
-      'text2text-generation',
-      'Xenova/LaMini-Flan-T5-248M',
-      { quantized: true }
-    );
-    return textGenPipe;
+    // Modelo estável e leve para reescrita/correção
+    pipeInst = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-248M', {
+      quantized: true
+    });
+    return pipeInst;
   }
 
-  // Invocador resiliente (diferenças de API entre versões)
+  // Invocador resiliente (variações de API)
   async function runPipe(p, input, options) {
     if (typeof p === 'function')           return await p(input, options);
     if (typeof p?.call === 'function')     return await p.call(input, options);
@@ -134,7 +146,6 @@ const popupMessageContent = document.getElementById('popupMessageContent');
       temperature: 0.6,
       top_p: 0.9
     });
-
     let txt = (Array.isArray(out) ? out[0]?.generated_text : out?.generated_text) || '';
     txt = txt.replace(/^["“”']+|["“”']+$/g, '').trim();
     if (txt.length > 240) txt = txt.slice(0, 240).trim();
@@ -144,7 +155,6 @@ const popupMessageContent = document.getElementById('popupMessageContent');
   btn.addEventListener('click', async () => {
     const original = (input.value || '').trim();
     if (!original) { setStatus('Digite algo primeiro 🙂'); input.focus(); return; }
-
     try {
       setStatus('Gerando sugestão...');
       const suggestion = await improve(original, select.value);
@@ -152,15 +162,15 @@ const popupMessageContent = document.getElementById('popupMessageContent');
       setStatus('Sugestão aplicada.');
     } catch (e) {
       console.error(e);
-      setStatus('Erro na IA. Tente novamente.');
+      setStatus('Erro na IA. Verifique conexão/CDN/HTTPS e tente de novo.');
     }
   });
 
-  // Pré-carrega a lib quando ocioso (opcional)
+  // Pré-carrega quando ocioso
   if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => ensureLib().catch(console.warn));
+    requestIdleCallback(() => importTransformers().catch(console.warn));
   } else {
-    setTimeout(() => ensureLib().catch(console.warn), 1200);
+    setTimeout(() => importTransformers().catch(console.warn), 1200);
   }
 })();
 
@@ -505,3 +515,4 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
     });
 
 }
+

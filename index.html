@@ -61,17 +61,41 @@
 
         <!-- Easter Egg Form -->
         <div id="easterEggForm" class="card p-3 mb-4 d-none">
-            <h5 class="text-primary">Mensagem surpresa 💌</h5>
-            <form id="sendMessageForm" class="d-flex flex-column flex-md-row gap-2 align-items-md-center">
-                <div class="d-flex align-items-center gap-1">
-                    <span class="fw-bold text-secondary">Para:</span>
-                    <span id="messageToLabel" class="fw-bold">Gabriela</span>
-                </div>
-                <input type="hidden" id="toUser">
-                <input type="text" id="messageText" class="form-control" placeholder="Digite a mensagem..." required>
-                <button type="submit" class="btn btn-primary">Enviar</button>
-            </form>
-        </div>
+  <h5 class="text-primary">Mensagem surpresa 💌</h5>
+
+  <form id="sendMessageForm" class="d-flex flex-column flex-md-row gap-2 align-items-md-center flex-wrap">
+    <div class="d-flex align-items-center gap-1">
+      <span class="fw-bold text-secondary">Para:</span>
+      <span id="messageToLabel" class="fw-bold">Gabriela</span>
+    </div>
+
+    <input type="hidden" id="toUser">
+
+    <!-- Campo de mensagem -->
+    <input type="text" id="messageText" class="form-control" placeholder="Digite a mensagem..." required>
+
+    <!-- Controles de IA -->
+    <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+      <select id="tone" class="form-select" style="max-width: 220px">
+        <option value="romântica" selected>Romântica</option>
+        <option value="fofa">Fofa</option>
+        <option value="sincera">Sincera</option>
+        <option value="engraçada">Engraçada</option>
+        <option value="apaziguadora">Apaziguadora</option>
+      </select>
+
+      <button type="button" id="aiSuggestBtn" class="btn btn-outline-secondary">
+        Aprimorar ✨
+      </button>
+    </div>
+
+    <small id="aiStatus" class="text-muted d-block mt-1" style="min-height:1.25rem"></small>
+
+    <!-- Enviar -->
+    <button type="submit" class="btn btn-primary mt-2 mt-md-0">Enviar</button>
+  </form>
+</div>
+
 
         <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
             <div id="messageToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive"

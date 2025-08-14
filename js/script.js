@@ -85,31 +85,60 @@ const popupMessageContent = document.getElementById('popupMessageContent');
 
   function setStatus(m){ if (status) status.textContent = m || ''; }
 
-  async function importTransformers() {
-    if (tf) return tf;
-    setStatus('Carregando IA...');
-    let lastErr;
-    for (const url of CDN_TRIES) {
-      try {
-        // some CDNs exigem sufixo explicitamente ESM; os dois primeiros já lidam com isso
-        tf = await import(url);
-        break;
-      } catch (e) {
-        lastErr = e;
-      }
-    }
-    if (!tf) throw lastErr || new Error('Falha ao importar @xenova/transformers');
+  // tenta importar @xenova/transformers de vários CDNs.
+// se todos falharem, injeta <script type="module"> (jsDelivr) e usa window.__tf.
+async function importTransformers() {
+  if (tf) return tf;
+  setStatus('Carregando IA...');
 
-    // Configurar para buscar modelos do Hugging Face e usar cache
-    tf.env.allowLocalModels = false;
-    tf.env.allowRemoteModels = true;
-    tf.env.useBrowserCache  = true;
-    tf.env.remoteModelPath  = 'https://huggingface.co';
-    tf.env.backends.onnx.wasm.proxy = true;
+  const tries = [
+    'https://esm.sh/@xenova/transformers?bundle',
+    'https://esm.sh/@xenova/transformers@3?bundle',
+    'https://cdn.skypack.dev/@xenova/transformers',
+  ];
 
-    setStatus('IA pronta ✨');
-    return tf;
+  let lastErr;
+  for (const url of tries) {
+    try {
+      tf = await import(url);
+      if (tf?.env && tf?.pipeline) break;
+    } catch (e) { lastErr = e; tf = null; }
   }
+
+  // Fallback: injeta <script type="module"> do jsDelivr e expõe em window.__tf
+  if (!tf) {
+    await new Promise((resolve, reject) => {
+      const tag = document.createElement('script');
+      tag.type = 'module';
+      tag.textContent = `
+        import * as T from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest';
+        window.__tf = T;
+      `;
+      tag.onload = resolve;
+      tag.onerror = reject;
+      document.head.appendChild(tag);
+    });
+
+    // espera o módulo aparecer
+    const t0 = Date.now();
+    while (!window.__tf) {
+      if (Date.now() - t0 > 15000) throw (lastErr || new Error('Falha ao carregar transformers'));
+      await new Promise(r => setTimeout(r, 50));
+    }
+    tf = window.__tf;
+  }
+
+  // Config geral
+  tf.env.allowLocalModels = false;
+  tf.env.allowRemoteModels = true;
+  tf.env.useBrowserCache  = true;
+  tf.env.remoteModelPath  = 'https://huggingface.co';
+  tf.env.backends.onnx.wasm.proxy = true;
+
+  setStatus('IA pronta ✨');
+  return tf;
+}
+
 
   async function getPipe() {
     if (pipeInst) return pipeInst;
@@ -515,4 +544,5 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
     });
 
 }
+
 

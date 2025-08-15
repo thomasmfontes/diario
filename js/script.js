@@ -26,158 +26,124 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
-// =============== IA no navegador com WebLLM (GRÁTIS) ===============
+// ===== IA Turbo (WebLLM) + fallback Leve (LanguageTool) =====
 (function () {
   const input  = document.getElementById('messageText');
   if (!input) return;
 
-  // Pega/Cria controles
+  // UI
   let select = document.getElementById('tone');
   let btn    = document.getElementById('aiSuggestBtn');
   let status = document.getElementById('aiStatus');
-
   if (!select || !btn || !status) {
-    const wrap = document.createElement('div');
-    wrap.className = 'd-flex gap-2 mt-2 align-items-center flex-wrap';
-
-    select = document.createElement('select');
-    select.id = 'tone';
-    select.className = 'form-select';
-    select.style.maxWidth = '220px';
-    ['romântica','fofa','sincera','engraçada','apaziguadora'].forEach((t, i) => {
-      const op = document.createElement('option');
-      op.value = t; op.textContent = t.charAt(0).toUpperCase() + t.slice(1);
-      if (i === 0) op.selected = true;
-      select.appendChild(op);
-    });
-
-    btn = document.createElement('button');
-    btn.type = 'button';
-    btn.id = 'aiSuggestBtn';
-    btn.className = 'btn btn-outline-secondary';
-    btn.textContent = 'Aprimorar ✨';
-
-    status = document.createElement('small');
-    status.id = 'aiStatus';
-    status.className = 'text-muted d-block';
-    status.style.minHeight = '1.25rem';
-
-    input.insertAdjacentElement('afterend', wrap);
-    wrap.appendChild(select);
-    wrap.appendChild(btn);
-    wrap.insertAdjacentElement('afterend', status);
+    const wrap = document.createElement('div'); wrap.className = 'd-flex gap-2 mt-2 flex-wrap align-items-center';
+    select = document.createElement('select'); select.id='tone'; select.className='form-select'; select.style.maxWidth='220px';
+    ['romântica','fofa','sincera','engraçada','apaziguadora'].forEach((t,i)=>{ const op=document.createElement('option'); op.value=t; op.textContent=t[0].toUpperCase()+t.slice(1); if(!i) op.selected=true; select.appendChild(op); });
+    btn = document.createElement('button'); btn.type='button'; btn.id='aiSuggestBtn'; btn.className='btn btn-outline-secondary'; btn.textContent='Aprimorar ✨';
+    status = document.createElement('small'); status.id='aiStatus'; status.className='text-muted d-block'; status.style.minHeight='1.25rem';
+    input.insertAdjacentElement('afterend', wrap); wrap.appendChild(select); wrap.appendChild(btn); wrap.insertAdjacentElement('afterend', status);
   }
+  const setStatus = (m)=> status && (status.textContent = m || '');
 
-  // -------- Loader robusto (sem depender do HTML) --------
-  const WLLM_CDNS = [
-    'https://unpkg.com/@mlc-ai/web-llm@0.2.88/dist/index.min.js',
-    'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.88/dist/index.min.js',
-    'https://unpkg.com/@mlc-ai/web-llm@0.2.74/dist/index.min.js'
-  ];
-  let engine = null;
-  let loading = false;
+  // ---------- TURBO (gera novo texto) ----------
+  let engine = null, turboReady = false;
+  async function tryInitTurbo() {
+    if (engine || turboReady) return turboReady;
+    // só ativa turbo em HTTPS e com WebGPU e lib carregada
+    if (location.protocol !== 'https:' && location.hostname.indexOf('localhost') === -1) return false;
+    if (!('gpu' in navigator)) return false;
+    if (!window.webllm) return false;
 
-  function setStatus(m){ if (status) status.textContent = m || ''; }
-
-  function loadScript(src){
-    return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = src; s.async = true;
-      s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-
-  async function ensureWebLLM() {
-    if (window.webllm) return window.webllm;
-    setStatus('Carregando IA...');
-    let lastErr;
-    for (const url of WLLM_CDNS) {
-      try {
-        await loadScript(url);
-        if (window.webllm) break;
-      } catch (e) { lastErr = e; }
-    }
-    if (!window.webllm) throw (lastErr || new Error('Falha ao carregar WebLLM'));
-    return window.webllm;
-  }
-
-  async function ensureEngine() {
-    if (engine) return engine;
-    if (loading) return engine;
-    loading = true;
-
-    // WebGPU exige contexto seguro (HTTPS ou localhost) e suporte do navegador
-    if (!('gpu' in navigator)) {
-      setStatus('Seu navegador não suporta WebGPU. Abra em HTTPS (GitHub Pages) e use Chrome/Edge recente.');
-      loading = false;
-      return null;
-    }
-
-    const webllm = await ensureWebLLM();
-
-    const prefer   = 'Qwen2-0.5B-Instruct-q4f32_1-MLC';
-    const fallback = 'Llama-3.2-1B-Instruct-q4f32_1-MLC';
-
-    const initProgressCallback = (p) => {
-      if (p?.text) setStatus(p.text); // mostra progresso: download/compilação
-    };
-
+    setStatus('Carregando IA (turbo)...');
+    const prefer='Qwen2-0.5B-Instruct-q4f32_1-MLC', fallback='Llama-3.2-1B-Instruct-q4f32_1-MLC';
+    const initProgressCallback = (p)=>{ if (p?.text) setStatus(p.text); };
     try {
-      engine = await webllm.CreateMLCEngine(prefer,   { initProgressCallback });
+      engine = await window.webllm.CreateMLCEngine(prefer,   { initProgressCallback });
     } catch (_) {
-      engine = await webllm.CreateMLCEngine(fallback, { initProgressCallback });
+      try { engine = await window.webllm.CreateMLCEngine(fallback, { initProgressCallback }); }
+      catch { engine = null; }
     }
-
-    setStatus('IA pronta ✨');
-    return engine;
+    turboReady = !!engine;
+    setStatus(turboReady ? 'Turbo ativo ✨' : 'Modo leve ativo');
+    return turboReady;
   }
 
-  function buildMessages(text, tone) {
-    const system = `Você reescreve mensagens curtas em pt-BR:
-- Corrija gramática e acentuação.
-- Mantenha o sentido e o nome da pessoa.
-- Dê um tom ${tone}, sem clichês.
-- No máx. 240 caracteres.
-- Responda com UMA única frase final, sem explicações.`;
-    const user = `Reescreva a mensagem: "${text}"`;
-    return [{ role: 'system', content: system }, { role: 'user', content: user }];
+  function turboMessages(text, tone){
+    const sys = `Você reescreve mensagens curtas em pt-BR, mantendo sentido, corrigindo gramática e acentuação.
+Dê um tom ${tone} sem clichês. Máximo 240 caracteres. Responda com UMA frase final, sem explicações.`;
+    return [{role:'system',content:sys},{role:'user',content:`Reescreva a mensagem: "${text}"`}];
   }
 
-  async function improve(text, tone) {
-    const eng = await ensureEngine();
-    if (!eng) throw new Error('Engine indisponível');
-    const res = await eng.chat.completions.create({
-      messages: buildMessages(text, tone),
+  async function improveTurbo(text, tone){
+    if (!engine) throw new Error('no-engine');
+    const res = await engine.chat.completions.create({
+      messages: turboMessages(text, tone),
       temperature: 0.6,
       max_tokens: 120
     });
     let out = res?.choices?.[0]?.message?.content || '';
-    out = out.replace(/^["“”']+|["“”']+$/g, '').trim();
-    if (out.length > 240) out = out.slice(0, 240).trim();
+    out = out.replace(/^["'“”]+|["'“”]+$/g,'').trim();
+    if (out.length>240) out = out.slice(0,240).trim();
     return out;
   }
 
+  // ---------- LEVE (corrige + reformula simples) ----------
+  async function grammarFixPTBR(text){
+    try{
+      const r = await fetch('https://api.languagetool.org/v2/check',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({text, language:'pt-BR'})
+      });
+      const data = await r.json();
+      let out = text;
+      const matches = (data.matches||[]).sort((a,b)=> (b.offset+b.length)-(a.offset+a.length));
+      for(const m of matches){ if(!m.replacements?.length) continue;
+        out = out.slice(0,m.offset)+m.replacements[0].value+out.slice(m.offset+m.length);
+      }
+      return out;
+    } catch { return text; }
+  }
+  function normalize(t){ t=(t||'').trim().replace(/^["'“”]+|["'“”]+$/g,'').replace(/\s+/g,' '); return t; }
+  function ensurePeriod(t){ return /[.!?…]$/.test(t)?t:t+'.'; }
+  function applyTone(t,tone){
+    t = normalize(t);
+    switch(tone){
+      case 'romântica': t = ensurePeriod(t); t += t.endsWith('❤')?'':' ❤'; break;
+      case 'fofa': t = ensurePeriod(t); t += ' Com carinho.'; break;
+      case 'sincera': t = ensurePeriod(t); break;
+      case 'engraçada': t = ensurePeriod(t.replace(/!{2,}/g,'!')); break;
+      case 'apaziguadora': t = ensurePeriod(t)+' Se errei, desculpa.'; break;
+    }
+    if (t.length>240) t=t.slice(0,240).trim();
+    return t;
+  }
+  async function improveLeve(text,tone){
+    const fixed = await grammarFixPTBR(text);
+    // pequena reordenação pra parecer reescrita
+    let t = fixed.replace(/^(\w+),\s*(.+)$/,'$2, $1'); // “Gabriela, te amo” -> “Te amo, Gabriela”
+    t = t.replace(/\beu te\b/gi,'te');                // simplifica
+    return applyTone(t,tone);
+  }
+
+  // ---------- Ação ----------
   btn.addEventListener('click', async () => {
-    const original = (input.value || '').trim();
-    if (!original) { setStatus('Digite algo primeiro 🙂'); input.focus(); return; }
-    try {
+    const original = (input.value||'').trim();
+    if (!original){ setStatus('Digite algo primeiro 🙂'); input.focus(); return; }
+
+    try{
+      // tenta turbo se possível
+      const turbo = await tryInitTurbo();
       setStatus('Gerando sugestão...');
-      const suggestion = await improve(original, select.value);
-      input.value = suggestion || original;
-      setStatus('Sugestão aplicada.');
-    } catch (e) {
+      const out = turbo ? await improveTurbo(original, select.value)
+                        : await improveLeve(original,  select.value);
+      input.value = out || original;
+      setStatus(turbo ? 'Sugestão aplicada (turbo).' : 'Sugestão aplicada (modo leve).');
+    }catch(e){
       console.error(e);
-      setStatus('Erro na IA. Tente recarregar a página.');
+      setStatus('Falhou agora. Tente de novo.');
     }
   });
-
-  // Pré-carrega em ociosidade
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => ensureEngine().catch(console.warn));
-  } else {
-    setTimeout(() => ensureEngine().catch(console.warn), 1200);
-  }
 })();
 
 // --- Cartinhas (lista + filtro radios) ---
@@ -521,6 +487,7 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
     });
 
 }
+
 
 
 

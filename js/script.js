@@ -26,16 +26,16 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
-// =============== IA no navegador (UMD estável + fallback) ===============
+// =============== IA no navegador (UMD estável, sem ESM) ===============
 (function () {
   const input  = document.getElementById('messageText');
   if (!input) return;
 
+  // Pega/Cria controles
   let select = document.getElementById('tone');
   let btn    = document.getElementById('aiSuggestBtn');
   let status = document.getElementById('aiStatus');
 
-  // Injeta controles se não existirem no HTML
   if (!select || !btn || !status) {
     const controls = document.createElement('div');
     controls.className = 'd-flex gap-2 mt-2 align-items-center flex-wrap';
@@ -68,35 +68,30 @@ const popupMessageContent = document.getElementById('popupMessageContent');
     controls.insertAdjacentElement('afterend', status);
   }
 
-  // ---------- Carrega Transformers UMD com fallback de CDNs ----------
-  let tf = null;           // window.transformers
-  let pipeInst = null;     // pipeline
+  // ---------- Carrega Transformers UMD com fallback ----------
+  let tf = null;        // window.transformers
+  let pipeInst = null;  // pipeline
   let loading = false;
 
   function setStatus(m){ if (status) status.textContent = m || ''; }
 
-  async function loadScript(url){
+  function loadScript(url){
     return new Promise((res, rej) => {
       const s = document.createElement('script');
-      s.src = url;
-      s.async = true;
-      s.onload = res;
-      s.onerror = rej;
+      s.src = url; s.async = true;
+      s.onload = res; s.onerror = rej;
       document.head.appendChild(s);
     });
   }
 
-  async function importTransformers() {
-    if (tf) return tf;
+  async function importTransformersUMD() {
+    if (tf?.pipeline) return tf;
     setStatus('Carregando IA...');
 
     const cdns = [
-      // versões UMD conhecidas
       'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.1/dist/transformers.min.js',
-      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.15.0/dist/transformers.min.js',
-      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2/dist/transformers.min.js',
       'https://unpkg.com/@xenova/transformers@2.16.1/dist/transformers.min.js',
-      'https://unpkg.com/@xenova/transformers@2/dist/transformers.min.js'
+      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2/dist/transformers.min.js'
     ];
 
     let lastErr;
@@ -110,7 +105,7 @@ const popupMessageContent = document.getElementById('popupMessageContent');
 
     tf = window.transformers;
 
-    // Config: buscar modelos do Hugging Face e usar cache
+    // Buscar modelos do Hugging Face e usar cache
     tf.env.allowLocalModels = false;
     tf.env.allowRemoteModels = true;
     tf.env.useBrowserCache  = true;
@@ -126,10 +121,10 @@ const popupMessageContent = document.getElementById('popupMessageContent');
     if (loading) return pipeInst;
     loading = true;
 
-    const { pipeline } = await importTransformers();
+    const T = await importTransformersUMD();
 
     // Modelo leve e confiável para reescrita/correção
-    pipeInst = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-248M', {
+    pipeInst = await T.pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-248M', {
       quantized: true
     });
     return pipeInst;
@@ -138,6 +133,7 @@ const popupMessageContent = document.getElementById('popupMessageContent');
   async function improve(text, tone) {
     const p = await getPipe();
     const prompt = `Parafraseie em pt-BR com tom ${tone}, corrija gramática e acentuação, mantenha o sentido e o nome da pessoa, máximo 240 caracteres. Texto: ${text}`;
+    // Na UMD 2.x, a pipeline é FUNÇÃO
     const out = await p(prompt, { max_new_tokens: 96, temperature: 0.6, top_p: 0.9 });
 
     let txt = (Array.isArray(out) ? out[0]?.generated_text : out?.generated_text) || '';
@@ -156,15 +152,15 @@ const popupMessageContent = document.getElementById('popupMessageContent');
       setStatus('Sugestão aplicada.');
     } catch (e) {
       console.error(e);
-      setStatus('Erro na IA. Tente recarregar a página.');
+      setStatus('Erro na IA. Recarregue a página.');
     }
   });
 
   // Pré-carrega quando ocioso
   if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => importTransformers().catch(console.warn));
+    requestIdleCallback(() => importTransformersUMD().catch(console.warn));
   } else {
-    setTimeout(() => importTransformers().catch(console.warn), 1200);
+    setTimeout(() => importTransformersUMD().catch(console.warn), 1200);
   }
 })();
 
@@ -509,6 +505,7 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
     });
 
 }
+
 
 
 

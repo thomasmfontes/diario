@@ -26,11 +26,7 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
-// ================= IA no navegador (GRÁTIS) =================
-// Transformers.js via import() com fallback de CDNs + T5 leve (LaMini-Flan-248M).
-// Observação: melhor rodar em HTTPS (GitHub Pages). Em localhost pode funcionar,
-// mas alguns bloqueios de CORS/adblock podem atrapalhar.
-
+// =============== IA no navegador (UMD estável + fallback) ===============
 (function () {
   const input  = document.getElementById('messageText');
   if (!input) return;
@@ -39,7 +35,7 @@ const popupMessageContent = document.getElementById('popupMessageContent');
   let btn    = document.getElementById('aiSuggestBtn');
   let status = document.getElementById('aiStatus');
 
-  // Injeta controles se não estiverem no HTML
+  // Injeta controles se não existirem no HTML
   if (!select || !btn || !status) {
     const controls = document.createElement('div');
     controls.className = 'd-flex gap-2 mt-2 align-items-center flex-wrap';
@@ -72,73 +68,58 @@ const popupMessageContent = document.getElementById('popupMessageContent');
     controls.insertAdjacentElement('afterend', status);
   }
 
-  // -------- import dinâmico com fallback de CDNs --------
-  const CDN_TRIES = [
-    'https://esm.sh/@xenova/transformers@3.0.0?bundle',
-    'https://unpkg.com/@xenova/transformers@3.0.0?module',
-    'https://cdn.jsdelivr.net/npm/@xenova/transformers@3.0.0'
-  ];
-
-  let tf = null;          // módulo transformers
-  let pipeInst = null;    // pipeline instanciada
+  // ---------- Carrega Transformers UMD com fallback de CDNs ----------
+  let tf = null;           // window.transformers
+  let pipeInst = null;     // pipeline
   let loading = false;
 
   function setStatus(m){ if (status) status.textContent = m || ''; }
 
-  // tenta importar @xenova/transformers de vários CDNs.
-// se todos falharem, injeta <script type="module"> (jsDelivr) e usa window.__tf.
-async function importTransformers() {
-  if (tf) return tf;
-  setStatus('Carregando IA...');
-
-  const tries = [
-    'https://esm.sh/@xenova/transformers?bundle',
-    'https://esm.sh/@xenova/transformers@3?bundle',
-    'https://cdn.skypack.dev/@xenova/transformers',
-  ];
-
-  let lastErr;
-  for (const url of tries) {
-    try {
-      tf = await import(url);
-      if (tf?.env && tf?.pipeline) break;
-    } catch (e) { lastErr = e; tf = null; }
-  }
-
-  // Fallback: injeta <script type="module"> do jsDelivr e expõe em window.__tf
-  if (!tf) {
-    await new Promise((resolve, reject) => {
-      const tag = document.createElement('script');
-      tag.type = 'module';
-      tag.textContent = `
-        import * as T from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest';
-        window.__tf = T;
-      `;
-      tag.onload = resolve;
-      tag.onerror = reject;
-      document.head.appendChild(tag);
+  async function loadScript(url){
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = url;
+      s.async = true;
+      s.onload = res;
+      s.onerror = rej;
+      document.head.appendChild(s);
     });
-
-    // espera o módulo aparecer
-    const t0 = Date.now();
-    while (!window.__tf) {
-      if (Date.now() - t0 > 15000) throw (lastErr || new Error('Falha ao carregar transformers'));
-      await new Promise(r => setTimeout(r, 50));
-    }
-    tf = window.__tf;
   }
 
-  // Config geral
-  tf.env.allowLocalModels = false;
-  tf.env.allowRemoteModels = true;
-  tf.env.useBrowserCache  = true;
-  tf.env.remoteModelPath  = 'https://huggingface.co';
-  tf.env.backends.onnx.wasm.proxy = true;
+  async function importTransformers() {
+    if (tf) return tf;
+    setStatus('Carregando IA...');
 
-  setStatus('IA pronta ✨');
-  return tf;
-}
+    const cdns = [
+      // versões UMD conhecidas
+      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.1/dist/transformers.min.js',
+      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.15.0/dist/transformers.min.js',
+      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2/dist/transformers.min.js',
+      'https://unpkg.com/@xenova/transformers@2.16.1/dist/transformers.min.js',
+      'https://unpkg.com/@xenova/transformers@2/dist/transformers.min.js'
+    ];
 
+    let lastErr;
+    for (const url of cdns) {
+      try {
+        await loadScript(url);
+        if (window.transformers?.pipeline) break;
+      } catch (e) { lastErr = e; }
+    }
+    if (!window.transformers?.pipeline) throw (lastErr || new Error('Falha ao carregar Transformers UMD'));
+
+    tf = window.transformers;
+
+    // Config: buscar modelos do Hugging Face e usar cache
+    tf.env.allowLocalModels = false;
+    tf.env.allowRemoteModels = true;
+    tf.env.useBrowserCache  = true;
+    tf.env.remoteModelPath  = 'https://huggingface.co';
+    tf.env.backends.onnx.wasm.proxy = true; // WASM em worker
+
+    setStatus('IA pronta ✨');
+    return tf;
+  }
 
   async function getPipe() {
     if (pipeInst) return pipeInst;
@@ -147,34 +128,18 @@ async function importTransformers() {
 
     const { pipeline } = await importTransformers();
 
-    // Modelo estável e leve para reescrita/correção
+    // Modelo leve e confiável para reescrita/correção
     pipeInst = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-248M', {
       quantized: true
     });
     return pipeInst;
   }
 
-  // Invocador resiliente (variações de API)
-  async function runPipe(p, input, options) {
-    if (typeof p === 'function')           return await p(input, options);
-    if (typeof p?.call === 'function')     return await p.call(input, options);
-    if (typeof p?._call === 'function')    return await p._call(input, options);
-    if (typeof p?.execute === 'function')  return await p.execute(input, options);
-    if (typeof p?.generate === 'function') return await p.generate(input, options);
-    throw new Error('Pipeline inválida/indisponível');
-  }
-
-  function buildPrompt(texto, tom) {
-    return `Parafraseie em pt-BR com tom ${tom}, corrija gramática e acentuação, mantenha o sentido e o nome da pessoa, máximo 240 caracteres. Texto: ${texto}`;
-  }
-
   async function improve(text, tone) {
     const p = await getPipe();
-    const out = await runPipe(p, buildPrompt(text, tone), {
-      max_new_tokens: 96,
-      temperature: 0.6,
-      top_p: 0.9
-    });
+    const prompt = `Parafraseie em pt-BR com tom ${tone}, corrija gramática e acentuação, mantenha o sentido e o nome da pessoa, máximo 240 caracteres. Texto: ${text}`;
+    const out = await p(prompt, { max_new_tokens: 96, temperature: 0.6, top_p: 0.9 });
+
     let txt = (Array.isArray(out) ? out[0]?.generated_text : out?.generated_text) || '';
     txt = txt.replace(/^["“”']+|["“”']+$/g, '').trim();
     if (txt.length > 240) txt = txt.slice(0, 240).trim();
@@ -191,7 +156,7 @@ async function importTransformers() {
       setStatus('Sugestão aplicada.');
     } catch (e) {
       console.error(e);
-      setStatus('Erro na IA. Verifique conexão/CDN/HTTPS e tente de novo.');
+      setStatus('Erro na IA. Tente recarregar a página.');
     }
   });
 
@@ -544,5 +509,6 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
     });
 
 }
+
 
 

@@ -68,30 +68,63 @@ const popupMessageContent = document.getElementById('popupMessageContent');
     wrap.insertAdjacentElement('afterend', status);
   }
 
-  // ---------- Engine WebLLM ----------
-  let engine = null; // webllm engine
+  // -------- Loader robusto (sem depender do HTML) --------
+  const WLLM_CDNS = [
+    'https://unpkg.com/@mlc-ai/web-llm@0.2.88/dist/index.min.js',
+    'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.88/dist/index.min.js',
+    'https://unpkg.com/@mlc-ai/web-llm@0.2.74/dist/index.min.js'
+  ];
+  let engine = null;
   let loading = false;
 
   function setStatus(m){ if (status) status.textContent = m || ''; }
+
+  function loadScript(src){
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src; s.async = true;
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensureWebLLM() {
+    if (window.webllm) return window.webllm;
+    setStatus('Carregando IA...');
+    let lastErr;
+    for (const url of WLLM_CDNS) {
+      try {
+        await loadScript(url);
+        if (window.webllm) break;
+      } catch (e) { lastErr = e; }
+    }
+    if (!window.webllm) throw (lastErr || new Error('Falha ao carregar WebLLM'));
+    return window.webllm;
+  }
 
   async function ensureEngine() {
     if (engine) return engine;
     if (loading) return engine;
     loading = true;
 
-    setStatus('Carregando IA (baixando modelo)...');
-    const prefer  = 'Qwen2-0.5B-Instruct-q4f32_1-MLC';
+    // WebGPU exige contexto seguro (HTTPS ou localhost) e suporte do navegador
+    if (!('gpu' in navigator)) {
+      setStatus('Seu navegador não suporta WebGPU. Abra em HTTPS (GitHub Pages) e use Chrome/Edge recente.');
+      loading = false;
+      return null;
+    }
+
+    const webllm = await ensureWebLLM();
+
+    const prefer   = 'Qwen2-0.5B-Instruct-q4f32_1-MLC';
     const fallback = 'Llama-3.2-1B-Instruct-q4f32_1-MLC';
 
-    // barra de progresso opcional
     const initProgressCallback = (p) => {
-      if (!p || !p.text) return;
-      // exemplo: "Download xx%" / "Compile..." etc.
-      setStatus(p.text);
+      if (p?.text) setStatus(p.text); // mostra progresso: download/compilação
     };
 
     try {
-      engine = await webllm.CreateMLCEngine(prefer, { initProgressCallback });
+      engine = await webllm.CreateMLCEngine(prefer,   { initProgressCallback });
     } catch (_) {
       engine = await webllm.CreateMLCEngine(fallback, { initProgressCallback });
     }
@@ -108,31 +141,26 @@ const popupMessageContent = document.getElementById('popupMessageContent');
 - No máx. 240 caracteres.
 - Responda com UMA única frase final, sem explicações.`;
     const user = `Reescreva a mensagem: "${text}"`;
-    return [
-      { role: 'system', content: system },
-      { role: 'user',   content: user }
-    ];
+    return [{ role: 'system', content: system }, { role: 'user', content: user }];
   }
 
   async function improve(text, tone) {
     const eng = await ensureEngine();
+    if (!eng) throw new Error('Engine indisponível');
     const res = await eng.chat.completions.create({
       messages: buildMessages(text, tone),
       temperature: 0.6,
       max_tokens: 120
     });
-
     let out = res?.choices?.[0]?.message?.content || '';
     out = out.replace(/^["“”']+|["“”']+$/g, '').trim();
     if (out.length > 240) out = out.slice(0, 240).trim();
     return out;
   }
 
-  // Clique do botão
   btn.addEventListener('click', async () => {
     const original = (input.value || '').trim();
     if (!original) { setStatus('Digite algo primeiro 🙂'); input.focus(); return; }
-
     try {
       setStatus('Gerando sugestão...');
       const suggestion = await improve(original, select.value);
@@ -140,7 +168,7 @@ const popupMessageContent = document.getElementById('popupMessageContent');
       setStatus('Sugestão aplicada.');
     } catch (e) {
       console.error(e);
-      setStatus('Erro na IA. Recarregue a página.');
+      setStatus('Erro na IA. Tente recarregar a página.');
     }
   });
 
@@ -493,6 +521,7 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
     });
 
 }
+
 
 
 

@@ -87,7 +87,6 @@
         </div>
 
         <!-- Nova Memória -->
-        <!-- Nova Memória -->
         <section class="pointer card mb-4">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse"
@@ -104,15 +103,31 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="message" class="form-label">Mensagem</label>
-                            <textarea id="message" rows="3" class="form-control" required></textarea>
+                            <label for="message" class="form-label mb-1">Mensagem</label>
 
-                            <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
-                                <button type="button" id="spellCheckBtn" class="btn btn-outline-secondary">
-                                    Corrigir ortografia ✎
+                            <div class="field-rail position-relative">
+                                <textarea id="message" rows="3" class="form-control-plain pe-5" required></textarea>
+
+                                <button type="button" id="spellCheckBtn" class="rail-btn"
+                                    aria-label="Corrigir ortografia">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                        fill="url(#gradBlue)" stroke="url(#gradBlue)" stroke-width="1.5"
+                                        stroke-linecap="round" stroke-linejoin="round" class="sparkle">
+                                        <defs>
+                                            <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stop-color="#60A5FA" />
+                                                <stop offset="100%" stop-color="#2563EB" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6z" />
+                                    </svg>
                                 </button>
+
+                                <!-- status dentro do campo -->
+                                <span id="spellStatus"
+                                    class="position-absolute bottom-0 start-0 ps-2 pb-1 small text-muted"
+                                    style="font-size: 0.75rem;"></span>
                             </div>
-                            <small id="spellStatus" class="text-muted d-block mt-1" style="min-height:1.25rem"></small>
                         </div>
 
                         <div class="mb-3">

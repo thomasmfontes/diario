@@ -26,23 +26,63 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
-// ===== Correção ortográfica (LanguageTool + heurísticas pt-BR) =====
+// ===== Correção só com LanguageTool (pt-BR) =====
 (function () {
-    const titleEl = document.getElementById('title');
     const messageEl = document.getElementById('message');
     const btn = document.getElementById('spellCheckBtn');
     const statusEl = document.getElementById('spellStatus');
     if (!messageEl || !btn || !statusEl) return;
 
-    const setStatus = (m) => { statusEl.textContent = m || ''; };
+    const LT_URL = 'https://api.languagetool.org/v2/check';
+    const LT_LANG = 'pt-BR';
+    const LT_TIMEOUT_MS = 12000;
+    const MIN_LOADING_MS = 3000; // duração mínima do loading
+
+    // --- status com fade suave e sem "soco" visual ---
+    let statusHideTimer = null;
+    function showStatus(msg, { autoHideMs } = {}) {
+        if (statusHideTimer) { clearTimeout(statusHideTimer); statusHideTimer = null; }
+        statusEl.textContent = msg || '';
+        // reinicia a transição
+        statusEl.classList.remove('is-visible');
+        void statusEl.offsetWidth;
+        statusEl.classList.add('is-visible');
+        if (autoHideMs != null) {
+            statusHideTimer = setTimeout(hideStatus, autoHideMs);
+        }
+    }
+    function hideStatus() {
+        if (statusHideTimer) { clearTimeout(statusHideTimer); statusHideTimer = null; }
+        statusEl.classList.remove('is-visible');
+        setTimeout(() => { statusEl.textContent = ''; }, 250); // casa com o CSS de transition
+    }
+
+    const clean = (t) => String(t || '')
+        .replace(/^["'“”]+|["'“”]+$/g, '')
+        .replace(/\s+([,.!?;:])/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const ensurePeriod = (t) => /[.!?…]$/.test(t) ? t : (t ? t + '.' : t);
+
+    let inFlight; // AbortController
 
     async function ltCheck(text) {
-        const params = new URLSearchParams({ text, language: 'pt-BR' });
-        const r = await fetch('https://api.languagetool.org/v2/check', {
-            method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params
-        });
-        if (!r.ok) throw new Error('LanguageTool indisponível');
-        return r.json();
+        if (inFlight) inFlight.abort();
+        inFlight = new AbortController();
+        const to = setTimeout(() => inFlight.abort(), LT_TIMEOUT_MS);
+        try {
+            const r = await fetch(LT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ text, language: LT_LANG }),
+                signal: inFlight.signal
+            });
+            if (!r.ok) throw new Error('LanguageTool indisponível');
+            return await r.json();
+        } finally {
+            clearTimeout(to);
+            inFlight = null;
+        }
     }
 
     function applyLtCorrections(text, matches) {
@@ -55,68 +95,49 @@ const popupMessageContent = document.getElementById('popupMessageContent');
         return out;
     }
 
-    // Heurísticas seguras (acentos e limpeza)
-    function fixDiacritics(t) {
-        const pairs = [
-            ['voce', 'você'], ['nao', 'não'], ['ate', 'até'], ['ja', 'já'],
-            ['porem', 'porém'], ['amanha', 'amanhã'], ['manha', 'manhã'],
-            ['coracao', 'coração'], ['coracoes', 'corações'], ['acao', 'ação'], ['acoes', 'ações'],
-            ['atencao', 'atenção'], ['parabens', 'parabéns'],
-            ['irmao', 'irmão'], ['irmaos', 'irmãos'], ['irma', 'irmã'], ['irmaes', 'irmãs'],
-            ['mae', 'mãe'], ['maes', 'mães']
-        ];
-        for (const [from, to] of pairs) {
-            const re = new RegExp(`\\b${from}\\b`, 'gi');
-            t = t.replace(re, (m) => m[0] === m[0].toUpperCase() ? to[0].toUpperCase() + to.slice(1) : to);
-        }
-        return t;
-    }
-    const clean = (t) => t.replace(/^["'“”]+|["'“”]+$/g, '').replace(/\s+([,.!?;:])/g, '$1').replace(/\s+/g, ' ').trim();
-    const ensurePeriod = (t) => /[.!?…]$/.test(t) ? t : (t ? t + '.' : t);
-
+    // NÃO mostra status aqui; deixa o listener cuidar do UX
     async function correctMessage(text) {
-        // 1ª passada LT
-        let t = applyLtCorrections(text, (await ltCheck(text)).matches);
-        // Heurísticas
-        t = fixDiacritics(t); t = clean(t); t = ensurePeriod(t);
-        // 2ª passada LT
-        t = applyLtCorrections(t, (await ltCheck(t)).matches);
-        t = clean(t); if (!/[.!?…]$/.test(t)) t += '.';
-        if (t.length > 2000) t = t.slice(0, 2000).trim();
-        return t;
-    }
-
-    async function correctTitle(text) {
-        let t = applyLtCorrections(text, (await ltCheck(text)).matches);
-        t = fixDiacritics(t); t = clean(t);
-        // Título: sem ponto final, capitaliza primeira letra
-        if (t) t = t[0].toUpperCase() + t.slice(1);
-        t = t.replace(/[.!?…]+$/, ''); // remove pontuação final em título
-        if (t.length > 120) t = t.slice(0, 120).trim();
-        // 2ª passada (curta)
-        t = applyLtCorrections(t, (await ltCheck(t)).matches);
-        t = clean(t).replace(/[.!?…]+$/, '');
+        let t = text;
+        const r1 = await ltCheck(t);
+        t = applyLtCorrections(t, r1.matches);
+        t = ensurePeriod(clean(t));
+        try {
+            const r2 = await ltCheck(t);
+            t = applyLtCorrections(t, r2.matches);
+        } catch { }
+        t = clean(t);
+        if (!/[.!?…]$/.test(t)) t += '.';
+        if (t.length > 20000) t = t.slice(0, 20000).trim();
         return t;
     }
 
     btn.addEventListener('click', async () => {
         const originalMsg = (messageEl.value || '').trim();
-        const originalTit = (titleEl?.value || '').trim();
-        if (!originalMsg && !originalTit) { setStatus('Escreva uma mensagem.'); return; }
+        if (!originalMsg) { showStatus('Digite algo para corrigir.', { autoHideMs: 2000 }); return; }
+
+        const startedAt = performance.now();
 
         try {
             btn.disabled = true;
-            setStatus('Corrigindo...');
+            messageEl.readOnly = true;
+            messageEl.classList.add('loading');
+            showStatus('Verificando ortografia/gramática…');
 
-            // corrige o que existir
-            if (originalTit) titleEl.value = await correctTitle(originalTit);
-            if (originalMsg) messageEl.value = await correctMessage(originalMsg);
+            const corrected = await correctMessage(originalMsg);
 
-            setStatus('Correções aplicadas.');
+            const elapsed = performance.now() - startedAt;
+            if (elapsed < MIN_LOADING_MS) {
+                await new Promise(r => setTimeout(r, MIN_LOADING_MS - elapsed));
+            }
+
+            messageEl.value = corrected;
+            showStatus('Correção aplicada.', { autoHideMs: 2000 });
         } catch (e) {
             console.error(e);
-            setStatus('Falhou a correção. Tente novamente.');
+            showStatus(e.name === 'AbortError' ? 'Operação cancelada.' : 'Falhou a correção.');
         } finally {
+            messageEl.classList.remove('loading');
+            messageEl.readOnly = false;
             btn.disabled = false;
         }
     });

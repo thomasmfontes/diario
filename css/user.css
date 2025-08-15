@@ -1,0 +1,26 @@
+.modal-title {
+    font-family: 'Pacifico', cursive;
+    color: var(--rosa);
+}
+
+.btn-thomas {
+    background-color: var(--azul);
+    color: #fff;
+    border: none;
+}
+
+.btn-thomas:hover {
+    background-color: var(--azul-escuro);
+    color: white;
+}
+
+.btn-gabriela {
+    background-color: var(--rosa);
+    color: #fff;
+    border: none;
+}
+
+.btn-gabriela:hover {
+    background-color: var(--rosa-escuro);
+    color: white;
+}

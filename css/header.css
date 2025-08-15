@@ -1,0 +1,18 @@
+.title-font {
+    font-family: 'Pacifico', cursive;
+    color: #e75480;
+    /* rosa forte para título */
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.tg {
+    font-family: 'Luxurious Script', cursive;
+    font-size: 3rem;
+    color: #c268b7;
+    /* rosa forte */
+    letter-spacing: 0.1rem;
+    margin-bottom: 0px;
+}

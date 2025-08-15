@@ -1,0 +1,21 @@
+/* Card geral (formulário) mais arredondado */
+.card {
+    border-radius: 1rem;
+}
+
+/* Inputs e textarea mais arredondados */
+.form-control {
+    border-radius: 0.75rem;
+}
+
+/* Botão salvar personalizado com rosa e bem arredondado */
+.btn-primary {
+    background-color: var(--rosa);
+    border-color: var(--rosa);
+    border-radius: 0.75rem; /* mais arredondado */
+}
+
+.btn-primary:hover {
+    background-color: var(--rosa-escuro);
+    border-color: var(--rosa-escuro);
+}

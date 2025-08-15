@@ -1,0 +1,36 @@
+.text-thomas {
+    color: var(--azul); /* azul */
+}
+
+.text-gabriela {
+    color: var(--rosa); /* rosa */
+}
+
+/* Carta surpresa */
+.modal-content.carta {
+    background-color: var(--bgCarta);
+    border: 2px solid var(--rosa);
+    border-radius: 1rem;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    font-family: 'Luxurious Script', cursive;
+}
+
+.modal-content.carta .modal-title {
+    font-family: 'Pacifico', cursive;
+    font-size: 1.8rem;
+    color: var(--rosa);
+}
+
+.modal-content.carta .modal-body {
+    color: var(--cinza-escuro);
+    font-family: 'Georgia', serif;
+}
+
+.modal-content.carta button {
+    transition: transform 0.2s ease;
+}
+
+.modal-content.carta button:hover {
+    transform: scale(1.2);
+}

@@ -1,10 +1,10 @@
-@import url("header.css");
-@import url("carta-list.css");
-@import url("ia.css");
+@import url("letter-list.css");
 @import url("user.css");
+@import url("header.css");
 @import url("carta.css");
-@import url("nova-memoria.css");
-@import url("memoria.css");
+@import url("ai.css");
+@import url("new-memory.css");
+@import url("memory.css");
 
 :root {
     --cor-fundo: #ffe6f0; 

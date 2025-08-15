@@ -26,7 +26,7 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
-// =============== IA no navegador (UMD estável, sem ESM) ===============
+// =============== IA no navegador com WebLLM (GRÁTIS) ===============
 (function () {
   const input  = document.getElementById('messageText');
   if (!input) return;
@@ -37,8 +37,8 @@ const popupMessageContent = document.getElementById('popupMessageContent');
   let status = document.getElementById('aiStatus');
 
   if (!select || !btn || !status) {
-    const controls = document.createElement('div');
-    controls.className = 'd-flex gap-2 mt-2 align-items-center flex-wrap';
+    const wrap = document.createElement('div');
+    wrap.className = 'd-flex gap-2 mt-2 align-items-center flex-wrap';
 
     select = document.createElement('select');
     select.id = 'tone';
@@ -62,89 +62,77 @@ const popupMessageContent = document.getElementById('popupMessageContent');
     status.className = 'text-muted d-block';
     status.style.minHeight = '1.25rem';
 
-    input.insertAdjacentElement('afterend', controls);
-    controls.appendChild(select);
-    controls.appendChild(btn);
-    controls.insertAdjacentElement('afterend', status);
+    input.insertAdjacentElement('afterend', wrap);
+    wrap.appendChild(select);
+    wrap.appendChild(btn);
+    wrap.insertAdjacentElement('afterend', status);
   }
 
-  // ---------- Carrega Transformers UMD com fallback ----------
-  let tf = null;        // window.transformers
-  let pipeInst = null;  // pipeline
+  // ---------- Engine WebLLM ----------
+  let engine = null; // webllm engine
   let loading = false;
 
   function setStatus(m){ if (status) status.textContent = m || ''; }
 
-  function loadScript(url){
-    return new Promise((res, rej) => {
-      const s = document.createElement('script');
-      s.src = url; s.async = true;
-      s.onload = res; s.onerror = rej;
-      document.head.appendChild(s);
-    });
-  }
-
-  async function importTransformersUMD() {
-    if (tf?.pipeline) return tf;
-    setStatus('Carregando IA...');
-
-    const cdns = [
-      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.1/dist/transformers.min.js',
-      'https://unpkg.com/@xenova/transformers@2.16.1/dist/transformers.min.js',
-      'https://cdn.jsdelivr.net/npm/@xenova/transformers@2/dist/transformers.min.js'
-    ];
-
-    let lastErr;
-    for (const url of cdns) {
-      try {
-        await loadScript(url);
-        if (window.transformers?.pipeline) break;
-      } catch (e) { lastErr = e; }
-    }
-    if (!window.transformers?.pipeline) throw (lastErr || new Error('Falha ao carregar Transformers UMD'));
-
-    tf = window.transformers;
-
-    // Buscar modelos do Hugging Face e usar cache
-    tf.env.allowLocalModels = false;
-    tf.env.allowRemoteModels = true;
-    tf.env.useBrowserCache  = true;
-    tf.env.remoteModelPath  = 'https://huggingface.co';
-    tf.env.backends.onnx.wasm.proxy = true; // WASM em worker
-
-    setStatus('IA pronta ✨');
-    return tf;
-  }
-
-  async function getPipe() {
-    if (pipeInst) return pipeInst;
-    if (loading) return pipeInst;
+  async function ensureEngine() {
+    if (engine) return engine;
+    if (loading) return engine;
     loading = true;
 
-    const T = await importTransformersUMD();
+    setStatus('Carregando IA (baixando modelo)...');
+    const prefer  = 'Qwen2-0.5B-Instruct-q4f32_1-MLC';
+    const fallback = 'Llama-3.2-1B-Instruct-q4f32_1-MLC';
 
-    // Modelo leve e confiável para reescrita/correção
-    pipeInst = await T.pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-248M', {
-      quantized: true
-    });
-    return pipeInst;
+    // barra de progresso opcional
+    const initProgressCallback = (p) => {
+      if (!p || !p.text) return;
+      // exemplo: "Download xx%" / "Compile..." etc.
+      setStatus(p.text);
+    };
+
+    try {
+      engine = await webllm.CreateMLCEngine(prefer, { initProgressCallback });
+    } catch (_) {
+      engine = await webllm.CreateMLCEngine(fallback, { initProgressCallback });
+    }
+
+    setStatus('IA pronta ✨');
+    return engine;
+  }
+
+  function buildMessages(text, tone) {
+    const system = `Você reescreve mensagens curtas em pt-BR:
+- Corrija gramática e acentuação.
+- Mantenha o sentido e o nome da pessoa.
+- Dê um tom ${tone}, sem clichês.
+- No máx. 240 caracteres.
+- Responda com UMA única frase final, sem explicações.`;
+    const user = `Reescreva a mensagem: "${text}"`;
+    return [
+      { role: 'system', content: system },
+      { role: 'user',   content: user }
+    ];
   }
 
   async function improve(text, tone) {
-    const p = await getPipe();
-    const prompt = `Parafraseie em pt-BR com tom ${tone}, corrija gramática e acentuação, mantenha o sentido e o nome da pessoa, máximo 240 caracteres. Texto: ${text}`;
-    // Na UMD 2.x, a pipeline é FUNÇÃO
-    const out = await p(prompt, { max_new_tokens: 96, temperature: 0.6, top_p: 0.9 });
+    const eng = await ensureEngine();
+    const res = await eng.chat.completions.create({
+      messages: buildMessages(text, tone),
+      temperature: 0.6,
+      max_tokens: 120
+    });
 
-    let txt = (Array.isArray(out) ? out[0]?.generated_text : out?.generated_text) || '';
-    txt = txt.replace(/^["“”']+|["“”']+$/g, '').trim();
-    if (txt.length > 240) txt = txt.slice(0, 240).trim();
-    return txt;
+    let out = res?.choices?.[0]?.message?.content || '';
+    out = out.replace(/^["“”']+|["“”']+$/g, '').trim();
+    if (out.length > 240) out = out.slice(0, 240).trim();
+    return out;
   }
 
+  // Clique do botão
   btn.addEventListener('click', async () => {
     const original = (input.value || '').trim();
     if (!original) { setStatus('Digite algo primeiro 🙂'); input.focus(); return; }
+
     try {
       setStatus('Gerando sugestão...');
       const suggestion = await improve(original, select.value);
@@ -156,11 +144,11 @@ const popupMessageContent = document.getElementById('popupMessageContent');
     }
   });
 
-  // Pré-carrega quando ocioso
+  // Pré-carrega em ociosidade
   if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => importTransformersUMD().catch(console.warn));
+    requestIdleCallback(() => ensureEngine().catch(console.warn));
   } else {
-    setTimeout(() => importTransformersUMD().catch(console.warn), 1200);
+    setTimeout(() => ensureEngine().catch(console.warn), 1200);
   }
 })();
 
@@ -505,6 +493,7 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
     });
 
 }
+
 
 
 

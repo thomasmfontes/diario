@@ -1,3 +1,5 @@
+@import url("ia.css");
+
 body {
     background-color: #ffe6f0; /* rosa clarinho */
 }
@@ -380,4 +382,5 @@ body {
 .chip.status.nao-lida { 
     border-color:#6c757d; 
     color:#6c757d; 
+
 }

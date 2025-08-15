@@ -26,146 +26,100 @@ const toUser = document.getElementById('toUser');
 const messageText = document.getElementById('messageText');
 const popupMessageContent = document.getElementById('popupMessageContent');
 
-// ===== IA Turbo (WebLLM) + fallback Leve (LanguageTool) — pronto p/ GitHub Pages =====
+// ===== Correção ortográfica (LanguageTool + heurísticas pt-BR) =====
 (function () {
-  const input = document.getElementById('messageText');
-  if (!input) return;
+    const titleEl = document.getElementById('title');
+    const messageEl = document.getElementById('message');
+    const btn = document.getElementById('spellCheckBtn');
+    const statusEl = document.getElementById('spellStatus');
+    if (!messageEl || !btn || !statusEl) return;
 
-  // UI (cria se não existir)
-  let select = document.getElementById('tone');
-  let btn    = document.getElementById('aiSuggestBtn');
-  let status = document.getElementById('aiStatus');
-  if (!select || !btn || !status) {
-    const wrap = document.createElement('div'); wrap.className = 'd-flex gap-2 mt-2 flex-wrap align-items-center';
-    select = document.createElement('select'); select.id = 'tone'; select.className = 'form-select'; select.style.maxWidth = '220px';
-    ['romântica','fofa','sincera','engraçada','apaziguadora'].forEach((t,i)=>{ const o=document.createElement('option'); o.value=t; o.textContent=t[0].toUpperCase()+t.slice(1); if(!i)o.selected=true; select.appendChild(o); });
-    btn = document.createElement('button'); btn.type='button'; btn.id='aiSuggestBtn'; btn.className='btn btn-outline-secondary'; btn.textContent='Aprimorar ✨';
-    status = document.createElement('small'); status.id='aiStatus'; status.className='text-muted d-block'; status.style.minHeight='1.25rem';
-    input.insertAdjacentElement('afterend', wrap); wrap.appendChild(select); wrap.appendChild(btn); wrap.insertAdjacentElement('afterend', status);
-  }
-  const setStatus = (m)=> status && (status.textContent = m || '');
+    const setStatus = (m) => { statusEl.textContent = m || ''; };
 
-  // ----------------- Loader WebLLM dinâmico (com fallbacks) -----------------
-  const WLLM_CDNS = [
-    'https://unpkg.com/@mlc-ai/web-llm@0.2.88/dist/index.min.js',
-    'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.88/dist/index.min.js',
-    'https://unpkg.com/@mlc-ai/web-llm@0.2.74/dist/index.min.js'
-  ];
-  function loadScript(src){
-    return new Promise((res, rej)=>{ const s=document.createElement('script'); s.src=src; s.async=true; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
-  }
-  async function ensureWebLLMScript(){
-    if (window.webllm) return true;
-    for (const url of WLLM_CDNS) {
-      try { await loadScript(url); if (window.webllm) return true; } catch {}
-    }
-    return false;
-  }
-
-  // ----------------- TURBO (gera de verdade) -----------------
-  let engine = null, turboReady = false, engineLoading = false;
-
-  async function tryInitTurbo() {
-    if (turboReady) return true;
-    if (engineLoading) return false;
-    engineLoading = true;
-
-    // HTTPS (Pages) ou localhost + WebGPU
-    if (!window.isSecureContext && location.hostname !== 'localhost') { engineLoading=false; return false; }
-    if (!('gpu' in navigator)) { engineLoading=false; return false; }
-
-    setStatus('Carregando IA (turbo)...');
-    const ok = await ensureWebLLMScript();
-    if (!ok || !window.webllm) { engineLoading=false; return false; }
-
-    const prefer='Qwen2-0.5B-Instruct-q4f32_1-MLC', fallback='Llama-3.2-1B-Instruct-q4f32_1-MLC';
-    const initProgressCallback = (p)=>{ if (p?.text) setStatus(p.text); };
-
-    try {
-      engine = await window.webllm.CreateMLCEngine(prefer, { initProgressCallback });
-    } catch {
-      try { engine = await window.webllm.CreateMLCEngine(fallback, { initProgressCallback }); }
-      catch { engine = null; }
+    async function ltCheck(text) {
+        const params = new URLSearchParams({ text, language: 'pt-BR' });
+        const r = await fetch('https://api.languagetool.org/v2/check', {
+            method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params
+        });
+        if (!r.ok) throw new Error('LanguageTool indisponível');
+        return r.json();
     }
 
-    turboReady = !!engine;
-    setStatus(turboReady ? 'Turbo ativo ✨' : 'Modo leve ativo');
-    engineLoading = false;
-    return turboReady;
-  }
+    function applyLtCorrections(text, matches) {
+        const sorted = (matches || []).sort((a, b) => (b.offset + b.length) - (a.offset + a.length));
+        let out = text;
+        for (const m of sorted) {
+            const rep = m.replacements?.[0]?.value; if (!rep) continue;
+            out = out.slice(0, m.offset) + rep + out.slice(m.offset + m.length);
+        }
+        return out;
+    }
 
-  function turboMessages(text, tone){
-    const sys = `Você reescreve mensagens curtas em pt-BR, mantendo sentido e corrigindo gramática.
-Dê um tom ${tone} sem clichês. Máx. 240 caracteres. Responda com UMA frase final, sem explicações.`;
-    return [{role:'system',content:sys},{role:'user',content:`Reescreva a mensagem: "${text}"`}];
-  }
+    // Heurísticas seguras (acentos e limpeza)
+    function fixDiacritics(t) {
+        const pairs = [
+            ['voce', 'você'], ['nao', 'não'], ['ate', 'até'], ['ja', 'já'],
+            ['porem', 'porém'], ['amanha', 'amanhã'], ['manha', 'manhã'],
+            ['coracao', 'coração'], ['coracoes', 'corações'], ['acao', 'ação'], ['acoes', 'ações'],
+            ['atencao', 'atenção'], ['parabens', 'parabéns'],
+            ['irmao', 'irmão'], ['irmaos', 'irmãos'], ['irma', 'irmã'], ['irmaes', 'irmãs'],
+            ['mae', 'mãe'], ['maes', 'mães']
+        ];
+        for (const [from, to] of pairs) {
+            const re = new RegExp(`\\b${from}\\b`, 'gi');
+            t = t.replace(re, (m) => m[0] === m[0].toUpperCase() ? to[0].toUpperCase() + to.slice(1) : to);
+        }
+        return t;
+    }
+    const clean = (t) => t.replace(/^["'“”]+|["'“”]+$/g, '').replace(/\s+([,.!?;:])/g, '$1').replace(/\s+/g, ' ').trim();
+    const ensurePeriod = (t) => /[.!?…]$/.test(t) ? t : (t ? t + '.' : t);
 
-  async function improveTurbo(text, tone){
-    const res = await engine.chat.completions.create({
-      messages: turboMessages(text, tone),
-      temperature: 0.6,
-      max_tokens: 120
+    async function correctMessage(text) {
+        // 1ª passada LT
+        let t = applyLtCorrections(text, (await ltCheck(text)).matches);
+        // Heurísticas
+        t = fixDiacritics(t); t = clean(t); t = ensurePeriod(t);
+        // 2ª passada LT
+        t = applyLtCorrections(t, (await ltCheck(t)).matches);
+        t = clean(t); if (!/[.!?…]$/.test(t)) t += '.';
+        if (t.length > 2000) t = t.slice(0, 2000).trim();
+        return t;
+    }
+
+    async function correctTitle(text) {
+        let t = applyLtCorrections(text, (await ltCheck(text)).matches);
+        t = fixDiacritics(t); t = clean(t);
+        // Título: sem ponto final, capitaliza primeira letra
+        if (t) t = t[0].toUpperCase() + t.slice(1);
+        t = t.replace(/[.!?…]+$/, ''); // remove pontuação final em título
+        if (t.length > 120) t = t.slice(0, 120).trim();
+        // 2ª passada (curta)
+        t = applyLtCorrections(t, (await ltCheck(t)).matches);
+        t = clean(t).replace(/[.!?…]+$/, '');
+        return t;
+    }
+
+    btn.addEventListener('click', async () => {
+        const originalMsg = (messageEl.value || '').trim();
+        const originalTit = (titleEl?.value || '').trim();
+        if (!originalMsg && !originalTit) { setStatus('Escreva uma mensagem.'); return; }
+
+        try {
+            btn.disabled = true;
+            setStatus('Corrigindo...');
+
+            // corrige o que existir
+            if (originalTit) titleEl.value = await correctTitle(originalTit);
+            if (originalMsg) messageEl.value = await correctMessage(originalMsg);
+
+            setStatus('Correções aplicadas.');
+        } catch (e) {
+            console.error(e);
+            setStatus('Falhou a correção. Tente novamente.');
+        } finally {
+            btn.disabled = false;
+        }
     });
-    let out = res?.choices?.[0]?.message?.content || '';
-    out = out.replace(/^["'“”]+|["'“”]+$/g,'').trim();
-    if (out.length>240) out = out.slice(0,240).trim();
-    return out;
-  }
-
-  // ----------------- LEVE (correção + reescrita simples) -----------------
-  async function grammarFixPTBR(text){
-    try{
-      const r = await fetch('https://api.languagetool.org/v2/check',{
-        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({text, language:'pt-BR'})
-      });
-      const data = await r.json();
-      let out = text;
-      const matches = (data.matches||[]).sort((a,b)=> (b.offset+b.length)-(a.offset+a.length));
-      for(const m of matches){ if(!m.replacements?.length) continue;
-        out = out.slice(0,m.offset)+m.replacements[0].value+out.slice(m.offset+m.length);
-      }
-      return out;
-    }catch{ return text; }
-  }
-  function normalize(t){ t=(t||'').trim().replace(/^["'“”]+|["'“”]+$/g,'').replace(/\s+/g,' '); return t; }
-  function ensurePeriod(t){ return /[.!?…]$/.test(t)?t:t+'.'; }
-  function applyTone(t,tone){
-    t = normalize(t);
-    switch(tone){
-      case 'romântica': t = ensurePeriod(t); t += t.endsWith('❤')?'':' ❤'; break;
-      case 'fofa': t = ensurePeriod(t)+' Com carinho.'; break;
-      case 'sincera': t = ensurePeriod(t); break;
-      case 'engraçada': t = ensurePeriod(t.replace(/!{2,}/g,'!')); break;
-      case 'apaziguadora': t = ensurePeriod(t)+' Se errei, desculpa.'; break;
-    }
-    if (t.length>240) t=t.slice(0,240).trim();
-    return t;
-  }
-  async function improveLeve(text,tone){
-    const fixed = await grammarFixPTBR(text);
-    // micro-reescrita pra não parecer só prefixo
-    let t = fixed.replace(/^(\w+),\s*(.+)$/,'$2, $1'); // “Gabriela, ...” -> “..., Gabriela”
-    t = t.replace(/\beu te\b/gi,'te');                // simplifica
-    return applyTone(t,tone);
-  }
-
-  // ----------------- Ação -----------------
-  btn.addEventListener('click', async () => {
-    const original = (input.value||'').trim();
-    if (!original){ setStatus('Digite algo primeiro 🙂'); input.focus(); return; }
-    try{
-      const turbo = await tryInitTurbo();
-      setStatus('Gerando sugestão...');
-      const out = turbo ? await improveTurbo(original, select.value)
-                        : await improveLeve(original,  select.value);
-      input.value = out || original;
-      setStatus(turbo ? 'Sugestão aplicada (turbo).' : 'Sugestão aplicada (modo leve).');
-    }catch(e){
-      console.error(e);
-      setStatus('Falhou agora. Tente de novo.');
-    }
-  });
 })();
 
 // --- Cartinhas (lista + filtro radios) ---
@@ -266,7 +220,7 @@ function carregarCartinhas(destino) {
   `;
             listaCartinhas.appendChild(el);
         });
-        
+
     }, err => {
         skeletonCartinhas?.classList.add('d-none');
         console.error(err);
@@ -507,13 +461,4 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
         };
         reader.onerror = reject;
     });
-
 }
-
-
-
-
-
-
-
-

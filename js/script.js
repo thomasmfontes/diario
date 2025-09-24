@@ -12,7 +12,7 @@ const db = firebase.firestore();
 
 const form = document.getElementById('memoryForm');
 const container = document.getElementById('memoriesContainer');
-const imageInput = document.getElementById('image');
+const imageInput = document.getElementById('images'); // múltiplas imagens
 const orderToggle = document.getElementById('orderToggle');
 const orderIcon = document.getElementById('orderIcon');
 const progressThomas = document.getElementById('progress-thomas');
@@ -54,7 +54,7 @@ const popupMessageContent = document.getElementById('popupMessageContent');
     function hideStatus() {
         if (statusHideTimer) { clearTimeout(statusHideTimer); statusHideTimer = null; }
         statusEl.classList.remove('is-visible');
-        setTimeout(() => { statusEl.textContent = ''; }, 250); // casa com o CSS de transition
+        setTimeout(() => { statusEl.textContent = ''; }, 250);
     }
 
     const clean = (t) => String(t || '')
@@ -95,7 +95,6 @@ const popupMessageContent = document.getElementById('popupMessageContent');
         return out;
     }
 
-    // NÃO mostra status aqui; deixa o listener cuidar do UX
     async function correctMessage(text) {
         let t = text;
         const r1 = await ltCheck(t);
@@ -165,6 +164,9 @@ window.addEventListener('load', () => {
         init();
     }
     resetEasterEgg();
+
+    // garante que sliders existentes sejam inicializados após o Swiper carregar
+    initPendingSwipers();
 });
 
 function init() {
@@ -302,19 +304,24 @@ easterEggTrigger?.addEventListener('click', () => {
 });
 
 imageInput.addEventListener('change', () => {
-    const file = imageInput.files[0];
-    imageInput.nextElementSibling.textContent = file ? file.name : 'Nenhuma selecionada';
+    const files = Array.from(imageInput.files || []);
+    imageInput.nextElementSibling.textContent = files.length
+        ? `${files.length} selecionada(s)`
+        : 'Nenhuma selecionada';
 });
 
 form.addEventListener('submit', async e => {
     e.preventDefault();
+
+    const files = Array.from(imageInput.files || []);
+    const images = await Promise.all(files.map(f => toBase64Compressed(f)));
 
     const memory = {
         title: form.title.value,
         message: form.message.value,
         date: form.memoryDate.value,
         autor: form.autor.value,
-        image: imageInput.files[0] ? await toBase64Compressed(imageInput.files[0]) : null
+        images: images.length ? images : null
     };
 
     db.collection('memories').add(memory).then(() => {
@@ -403,6 +410,9 @@ function loadMemories() {
         updateProgressBar(countThomas, countGabriela, countTotal);
 
         document.getElementById('loadingSpinner').classList.add('d-none');
+
+        // após carregar todos os cards, inicializar sliders
+        initPendingSwipers();
     });
 }
 
@@ -417,29 +427,169 @@ function updateProgressBar(thomasCount, gabrielaCount, total) {
     countTotalEl.textContent = total;
 }
 
-function addMemoryCard({ title, message, image, date, autor, id }) {
+function addMemoryCard({ title, message, images, image, date, autor, id }) {
+    // compat docs antigos: "image" string -> vira array
+    if (!images && image) images = [image];
+
     const col = document.createElement('div');
     col.className = 'col-12 col-md-6 col-lg-4';
+
+    const gallery = renderGallery(images);
 
     const card = document.createElement('div');
     card.className = 'card memory-card p-3 show';
     card.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start">
-            <h5 class="card-title text-primary">${title}</h5>
-            <div class="autor-dot ${autor === 'Thomas' ? 'dot-thomas' : 'dot-gabriela'}"></div>
-        </div>
-        <p class="card-text">${message}</p>
-        ${image ? `<img src="${image}" class="memory-photo mb-3" alt="memória">` : ''}
-        <div class="d-flex justify-content-between text-muted small">
-            <span>${formatDate(date)}</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="showModal('${id}')">Excluir</button>
-        </div>
-    `;
+  <div class="d-flex justify-content-between align-items-start">
+    <h5 class="card-title text-primary">${title}</h5>
+    <div class="autor-dot ${autor === 'Thomas' ? 'dot-thomas' : 'dot-gabriela'}"></div>
+  </div>
+  <p class="card-text">${message}</p>
+  ${gallery}
+  <div class="d-flex justify-content-between align-items-center">
+    <span class="text-muted small">${formatDate(date)}</span>
+    <div class="btn-group" role="group" aria-label="Ações">
+      <button type="button"
+              class="btn btn-sm btn-outline-secondary icon-btn"
+              title="Adicionar fotos" aria-label="Adicionar fotos"
+              onclick="openAddImages('${id}')">
+        <i class="bi bi-images"></i>
+      </button>
+      <button type="button"
+              class="btn btn-sm btn-outline-danger icon-btn"
+              title="Excluir" aria-label="Excluir"
+              onclick="showModal('${id}')">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+`;
+
 
     col.appendChild(card);
     container.prepend(col);
 
+    // inicializa qualquer swiper recém-inserido
+    initPendingSwipers(card);
+
     setTimeout(() => card.style.opacity = 1, 50);
+}
+
+let addPicker = null;
+let addTargetId = null;
+
+function ensureAddPicker() {
+    if (addPicker) return addPicker;
+    addPicker = document.createElement('input');
+    addPicker.type = 'file';
+    addPicker.accept = 'image/*';
+    addPicker.multiple = true;
+    addPicker.className = 'd-none';
+    document.body.appendChild(addPicker);
+    addPicker.addEventListener('change', handleAddImages);
+    return addPicker;
+}
+
+function openAddImages(memoryId) {
+    addTargetId = memoryId;
+    ensureAddPicker().click();
+}
+
+async function handleAddImages() {
+    try {
+        const files = Array.from(addPicker.files || []);
+        if (!files.length || !addTargetId) { addTargetId = null; return; }
+
+        // comprime para base64 (aproveita sua toBase64Compressed)
+        const newImages = await Promise.all(files.map(f => toBase64Compressed(f)));
+
+        const docRef = db.collection('memories').doc(addTargetId);
+
+        // transaction para manter compat e não perder a foto antiga (campo "image")
+        await firebase.firestore().runTransaction(async (tx) => {
+            const snap = await tx.get(docRef);
+            if (!snap.exists) throw new Error('Memória não encontrada');
+
+            const d = snap.data() || {};
+            let imagesArr = [];
+
+            if (Array.isArray(d.images)) imagesArr = d.images.slice();
+            else if (typeof d.image === 'string') imagesArr = [d.image];
+
+            imagesArr.push(...newImages);
+
+            const updates = {
+                images: imagesArr,
+            };
+            if (d.image) {
+                updates.image = firebase.firestore.FieldValue.delete(); // remove campo antigo
+            }
+            tx.update(docRef, updates);
+        });
+
+        addPicker.value = '';
+        addTargetId = null;
+
+        // recarrega lista para refletir as novas fotos
+        await loadMemories();
+    } catch (err) {
+        console.error(err);
+        alert('Falha ao adicionar fotos: ' + (err?.message || err));
+    }
+}
+
+// ---- GALERIA (Swiper) ----
+function renderGallery(images) {
+    if (!images || !images.length) return '';
+
+    if (images.length === 1) {
+        return `<img src="${images[0]}" class="memory-photo mb-3 w-100 rounded" alt="memória">`;
+    }
+
+    const cid = 'swiper-' + Math.random().toString(36).slice(2);
+    const total = images.length;
+
+    return `
+    <div class="swiper mySwiper mb-3" id="${cid}">
+      <div class="media-count-badge"><span class="mc-current">1</span>/${total}</div>
+      <div class="swiper-wrapper">
+        ${images.map(src => `
+          <div class="swiper-slide">
+            <img src="${src}" class="memory-photo w-100 rounded" alt="memória">
+          </div>
+        `).join('')}
+      </div>
+      <div class="swiper-pagination"></div>
+    </div>
+  `;
+}
+
+// Inicializa todos os .swiper que ainda não foram iniciados
+function initPendingSwipers(rootEl = document) {
+    if (typeof Swiper === 'undefined') return; // Swiper ainda não carregou
+    const nodes = rootEl.querySelectorAll('.swiper:not(.is-init)');
+
+    nodes.forEach(node => {
+        const badgeCurrentEl = node.querySelector('.media-count-badge .mc-current');
+
+        const updateBadge = (sw) => {
+            if (!badgeCurrentEl) return;
+            const idx = (typeof sw.realIndex === 'number' ? sw.realIndex : sw.activeIndex) + 1;
+            badgeCurrentEl.textContent = String(idx);
+        };
+
+        const swiper = new Swiper(node, {
+            loop: false,
+            spaceBetween: 10,
+            autoHeight: true,
+            pagination: { el: node.querySelector('.swiper-pagination'), clickable: true },
+            on: {
+                init: updateBadge,
+                slideChange: updateBadge
+            }
+        });
+
+        node.classList.add('is-init');
+    });
 }
 
 function formatDate(dateStr) {
@@ -469,9 +619,9 @@ function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
             img.src = reader.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const scaleFactor = maxWidth / img.width;
-                canvas.width = maxWidth;
-                canvas.height = img.height * scaleFactor;
+                const scaleFactor = Math.min(1, maxWidth / img.width || 1);
+                canvas.width = Math.round(img.width * scaleFactor);
+                canvas.height = Math.round(img.height * scaleFactor);
 
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);

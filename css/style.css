@@ -1,13 +1,13 @@
 @import url("letter-list.css");
 @import url("user.css");
 @import url("header.css");
-@import url("letter.css");
+@import url("carta.css");
 @import url("ai.css");
 @import url("new-memory.css");
 @import url("memory.css");
 
 :root {
-    --cor-fundo: #ffe6f0; 
+    --cor-fundo: #ffe6f0;
     --rosa: #e75480;
     --rosa-escuro: #d64370;
     --azul: #007bff;
@@ -19,9 +19,31 @@
 }
 
 body {
-    background-color: var(--cor-fundo); /* rosa clarinho */
+    background-color: var(--cor-fundo);
+    /* rosa clarinho */
 }
 
 .text-primary {
     color: var(--rosa) !important;
+}
+
+.swiper-pagination-bullet {
+    background: #c7c7c7;
+    /* cor das bolinhas inativas */
+    opacity: 1;
+    /* sem transparência */
+    width: 8px;
+    height: 8px;
+    /* tamanho (opcional) */
+}
+
+.swiper-pagination-bullet-active {
+    background: var(--rosa);
+    /* cor da ativa (mesma do tema) */
+    transform: scale(1.15);
+    /* leve destaque (opcional) */
+}
+
+.swiper-horizontal>.swiper-pagination-bullets .swiper-pagination-bullet {
+    margin: 0 4px;
 }

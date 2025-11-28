@@ -1,35 +1,3 @@
-<<<<<<< HEAD
-:root {
-    --cor-fundo: #ffe6f0;
-    --rosa: #e75480;
-    --rosa-escuro: #d64370;
-    /* cor das bolinhas inativas */
-    opacity: 1;
-    /* sem transparência */
-    width: 8px;
-    height: 8px;
-    /* tamanho (opcional) */
-}
-
-.swiper-pagination-bullet-active {
-    background: var(--rosa);
-    /* cor da ativa (mesma do tema) */
-    transform: scale(1.15);
-    /* leve destaque (opcional) */
-}
-
-.swiper-horizontal>.swiper-pagination-bullets .swiper-pagination-bullet {
-    margin: 0 4px;
-}
-=======
-@import url("letter-list.css");
-@import url("user.css");
-@import url("header.css");
-@import url("carta.css");
-@import url("ai.css");
-@import url("new-memory.css");
-@import url("memory.css");
-
 :root {
     --cor-fundo: #ffe6f0;
     --rosa: #e75480;
@@ -40,11 +8,25 @@
     --cinza-escuro: #495057;
     --borda: #f3c2cf;
     --bgCarta: #fffaf8;
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
 }
 
 body {
-    background-color: var(--cor-fundo);
-    /* rosa clarinho */
+    background: linear-gradient(135deg, #ffe6f0 0%, #fff0f5 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Glassmorphism Utility */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 16px;
 }
 
 .text-primary {
@@ -71,4 +53,3 @@ body {
 .swiper-horizontal>.swiper-pagination-bullets .swiper-pagination-bullet {
     margin: 0 4px;
 }
->>>>>>> afc12bb28d7ec8fb39fe6ed6f920a8384294db7e

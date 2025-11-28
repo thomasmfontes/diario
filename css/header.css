@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .title-font {
     font-family: 'Pacifico', cursive;
     color: #e75480;
@@ -15,4 +16,23 @@
     /* rosa forte */
     letter-spacing: 0.1rem;
     margin-bottom: 0px;
+=======
+.title-font {
+    font-family: 'Pacifico', cursive;
+    color: #e75480;
+    /* rosa forte para título */
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.tg {
+    font-family: 'Luxurious Script', cursive;
+    font-size: 3rem;
+    color: #c268b7;
+    /* rosa forte */
+    letter-spacing: 0.1rem;
+    margin-bottom: 0px;
+>>>>>>> afc12bb28d7ec8fb39fe6ed6f920a8384294db7e
 }

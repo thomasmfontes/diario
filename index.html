@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -320,3 +321,318 @@
 </body>
 
 </html>
+=======
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nosso Diário</title>
+
+    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#e75480">
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
+
+    <!-- Fontes & Estilos -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Luxurious+Script&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Meta OG -->
+    <meta property="og:title" content="Nosso Diário">
+    <meta property="og:description" content="Nossos momentos especiais reunidos em um só lugar.">
+    <meta property="og:image" content="https://thomasmfontes.github.io/diario/capa.jpg">
+    <meta property="og:url" content="https://thomasmfontes.github.io/diario/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Nosso Diário">
+    <meta name="twitter:description" content="Nossos momentos especiais reunidos em um só lugar.">
+    <meta name="twitter:image" content="https://thomasmfontes.github.io/diario/capa.jpg">
+</head>
+
+<style>
+
+</style>
+
+<body>
+    <div class="container py-5">
+
+        <!-- Header -->
+        <header class="text-center mb-3">
+            <h1 class="title-font display-4 text-primary">Nosso Diário</h1>
+            <p class="lead text-muted">
+                Nossos momentos inesquecíveis
+                <span id="easterEggTrigger" class="pointer">❤️</span>
+            </p>
+            <p class="tg">T &amp; G</p>
+
+            <!-- Botão Cartinhas -->
+            <button id="btn-cartinhas" class="btn btn-outline-secondary btn-sm position-absolute top-0 start-0 m-3"
+                title="Ver cartinhas">
+                <i class="bi bi-envelope-heart"></i>
+            </button>
+
+            <!-- Botão Trocar Usuário -->
+            <button id="userSwitcher" class="btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-3"
+                title="Trocar usuário" onclick="trocarUsuario()">
+                <i class="bi bi-person-fill"></i>
+            </button>
+        </header>
+
+        <!-- Easter Egg Form -->
+        <div id="easterEggForm" class="card p-3 mb-4 d-none">
+            <h5 class="text-primary">Mensagem surpresa 💌</h5>
+            <form id="sendMessageForm" class="d-flex flex-column flex-md-row gap-2 align-items-md-center">
+                <div class="d-flex align-items-center gap-1">
+                    <span class="fw-bold text-secondary">Para:</span>
+                    <span id="messageToLabel" class="fw-bold">Gabriela</span>
+                </div>
+                <input type="hidden" id="toUser">
+                <input type="text" id="messageText" class="form-control" placeholder="Digite a mensagem..." required>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </form>
+        </div>
+
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+            <div id="messageToast" class="toast align-items-center text-bg-success border-0" role="alert"
+                aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        Mensagem enviada! 💌
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nova Memória -->
+        <section class="pointer card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse"
+                    data-bs-target="#memoryFormCollapse" aria-expanded="false">
+                    <h5 class="mb-0 text-primary">Nova Memória</h5>
+                    <i class="bi bi-chevron-down text-primary"></i>
+                </div>
+
+                <div class="collapse mt-3" id="memoryFormCollapse">
+                    <form id="memoryForm">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Título</label>
+                            <input type="text" id="title" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="message" class="form-label mb-1">Mensagem</label>
+
+                            <div class="field-rail position-relative">
+                                <textarea id="message" rows="3" class="form-control-plain pe-5" required></textarea>
+
+                                <button type="button" id="spellCheckBtn" class="rail-btn"
+                                    aria-label="Corrigir ortografia">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                        fill="url(#gradBlue)" stroke="url(#gradBlue)" stroke-width="1.5"
+                                        stroke-linecap="round" stroke-linejoin="round" class="sparkle">
+                                        <defs>
+                                            <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stop-color="#60A5FA" />
+                                                <stop offset="100%" stop-color="#2563EB" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6z" />
+                                    </svg>
+                                </button>
+
+                                <!-- status dentro do campo -->
+                                <span id="spellStatus"
+                                    class="position-absolute bottom-0 start-0 ps-2 pb-1 small text-muted"
+                                    style="font-size: 0.75rem;"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="memoryDate" class="form-label">Data da memória</label>
+                            <input type="date" id="memoryDate" class="pointer form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="images" class="form-label">Fotos (opcional, pode escolher várias)</label>
+                            <input type="file" id="images" accept="image/*" class="form-control" multiple>
+                            <small class="text-muted" id="imagesHelp"></small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="autor" class="form-label">Quem registrou</label>
+                            <select id="autor" class="pointer form-select" required>
+                                <option value="">Selecione</option>
+                                <option value="Thomas">Thomas</option>
+                                <option value="Gabriela">Gabriela</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Salvar Memória</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Memórias -->
+        <section>
+            <div class="card p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="h5 text-primary mb-0">Memórias</h2>
+                    <div class="d-flex align-items-center gap-2">
+                        <div id="loadingSpinner" class="spinner-border spinner-border-sm text-secondary d-none"
+                            role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <button id="orderToggle" class="btn btn-outline-secondary btn-sm" title="Inverter ordem">
+                            <i id="orderIcon" class="bi bi-arrow-down-up"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="progress mt-3" style="height: 20px; border-radius: 6px; font-size: 0.8rem;">
+                    <div id="progress-thomas" class="progress-bar bg-primary text-white text-center" role="progressbar"
+                        style="width: 0%">0</div>
+                    <div id="progress-gabriela" class="progress-bar text-white text-center"
+                        style="background-color: #e75480; width: 0%" role="progressbar">0</div>
+                </div>
+                <div class="text-end small mt-1 text-muted">
+                    Total: <span id="count-total">0</span>
+                </div>
+            </div>
+            <div id="memoriesContainer" class="row g-3"></div>
+        </section>
+
+        <!-- Modals -->
+        <div class="modal fade" id="confirmModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmar exclusão</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">Tem certeza que deseja excluir esta memória?</div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete()">Excluir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="popupMessageModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content carta">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title w-100 text-center">💌 Uma cartinha para você</h5>
+                    </div>
+                    <div class="modal-body text-center fs-5" id="popupMessageContent"></div>
+                    <div class="modal-footer justify-content-center border-0">
+                        <button type="button" id="markAsReadBtn" class="border-0 bg-transparent fs-1" title="Fechar">
+                            ❤️
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="userSelectModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title w-100 text-center">Quem está acessando?</h5>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="text-muted mb-4">Escolha quem está usando o diário agora 💌</p>
+                        <button class="btn btn-thomas m-2 px-4 rounded-pill" onclick="setUser('Thomas')">
+                            <i class="bi bi-person-fill"></i> Thomas
+                        </button>
+                        <button class="btn btn-gabriela m-2 px-4 rounded-pill" onclick="setUser('Gabriela')">
+                            <i class="bi bi-person-fill"></i> Gabriela
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Lista de Cartinhas -->
+        <div class="modal fade" id="cartinhasModal" tabindex="-1" aria-labelledby="cartinhasTitle">
+            <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down modal-lg">
+                <div class="modal-content carta">
+                    <div class="modal-header border-0 align-items-center position-relative shadow-sm">
+                        <button type="button" class="btn-close position-absolute top-0 end-0 m-2"
+                            data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+                        <div class="w-100">
+                            <h5 id="cartinhasTitle" class="modal-title w-100 text-center mb-2">💌 Cartinhas</h5>
+                            <div class="d-flex justify-content-center">
+                                <div class="btn-group btn-group-sm filtro-group" role="group"
+                                    aria-label="Filtro de cartinhas">
+                                    <input type="radio" class="btn-check" name="filtroCartinhas" id="filtroTodas"
+                                        value="todas" checked>
+                                    <label class="btn filtro-pill todas" for="filtroTodas">Todas</label>
+
+                                    <input type="radio" class="btn-check" name="filtroCartinhas" id="filtroThomas"
+                                        value="Thomas">
+                                    <label class="btn filtro-pill thomas" for="filtroThomas">Thomas</label>
+
+                                    <input type="radio" class="btn-check" name="filtroCartinhas" id="filtroGabriela"
+                                        value="Gabriela">
+                                    <label class="btn filtro-pill gabriela" for="filtroGabriela">Gabriela</label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-body">
+                        <div id="skeleton-cartinhas" class="d-none">
+                            <div class="skeleton-line mb-2"></div>
+                            <div class="skeleton-line mb-2"></div>
+                            <div class="skeleton-line mb-2"></div>
+                        </div>
+                        <div id="lista-cartinhas" class="carta-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-5 text-center text-muted small">
+            <p>Nosso Diário © 2025 - Criado com ❤️</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/script.js"></script>
+    <!-- Swiper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('change', (e) => {
+            if (e.target && e.target.id === 'images') {
+                const h = document.getElementById('imagesHelp');
+                h.textContent = e.target.files.length
+                    ? `${e.target.files.length} selecionada(s)`
+                    : '';
+            }
+        });
+    </script>
+
+</body>
+
+</html>
+>>>>>>> afc12bb28d7ec8fb39fe6ed6f920a8384294db7e

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .memory-card {
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
@@ -98,3 +99,106 @@
     font-size: 1rem;
     line-height: 1;
 }
+=======
+.memory-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    border-radius: 1rem;
+    /* mais arredondado */
+}
+
+.memory-card.show {
+    opacity: 1;
+}
+
+.memory-card:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 6px 15px -4px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+}
+
+.memory-photo {
+    border-radius: 1rem;
+}
+
+.autor-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: auto;
+}
+
+.dot-thomas {
+    background-color: var(--azul);
+    /* azul */
+}
+
+.dot-gabriela {
+    background-color: var(--rosa);
+    /* rosa */
+}
+
+/* Swiper não força altura fixa */
+.swiper {
+    width: 100%;
+    height: auto;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Slide centraliza a foto */
+.swiper-slide {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* padrão: não corta e ajusta a altura do slide automaticamente */
+.memory-photo {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    /* mostra a imagem inteira */
+    border-radius: 12px;
+    background: #00000010;
+    /* “letterbox” discreto, quase invisível */
+}
+
+/* quando for necessário cortar (retratos muito altos) */
+.memory-photo.crop {
+    height: 360px;
+    /* ajuste se quiser menor/maior */
+    object-fit: cover;
+    /* corta para caber bonitinho */
+}
+
+/* contador no canto superior direito */
+.media-count-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, .55);
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 999px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 1rem;
+}
+
+.icon-btn i {
+    font-size: 1rem;
+    line-height: 1;
+}
+>>>>>>> afc12bb28d7ec8fb39fe6ed6f920a8384294db7e

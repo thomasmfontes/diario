@@ -1,38 +1,46 @@
-.text-thomas {
-    color: var(--azul);
-    /* azul */
+/* ========== Letter/Carta Styling ========== */
+.carta {
+    background: var(--bgCarta);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
 }
 
-.text-gabriela {
-    color: var(--rosa);
-    /* rosa */
-}
-
-/* Carta surpresa */
-.modal-content.carta {
-    background-color: var(--bgCarta);
-    border: 2px solid var(--rosa);
-    border-radius: 1rem;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    padding: 1rem;
-    font-family: 'Luxurious Script', cursive;
+/* Letter Modal Content */
+.modal-content.carta .modal-header {
+    border-bottom: 1px solid var(--rosa-100);
+    padding: var(--space-lg);
 }
 
 .modal-content.carta .modal-title {
-    font-family: 'Pacifico', cursive;
-    font-size: 1.8rem;
-    color: var(--rosa);
+    font-family: var(--font-display);
+    color: var(--rosa-600);
+    font-size: var(--text-2xl);
 }
 
 .modal-content.carta .modal-body {
-    color: var(--cinza-escuro);
+    padding: var(--space-xl);
     font-family: 'Georgia', serif;
+    font-size: var(--text-lg);
+    line-height: 1.8;
+    color: var(--cinza-800);
 }
 
-.modal-content.carta button {
-    transition: transform 0.2s ease;
+.modal-content.carta .modal-footer {
+    border-top: 1px solid var(--rosa-100);
+    padding: var(--space-lg);
 }
 
-.modal-content.carta button:hover {
-    transform: scale(1.2);
+/* Heart Button */
+#markAsReadBtn {
+    transition: all var(--transition-bounce);
+    cursor: pointer;
+}
+
+#markAsReadBtn:hover {
+    transform: scale(1.2) rotate(10deg);
+    filter: brightness(1.1);
+}
+
+#markAsReadBtn:active {
+    transform: scale(1.1);
 }

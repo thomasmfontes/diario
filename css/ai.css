@@ -1,11 +1,17 @@
-/* --- layout do campo com lateral --- */
+/* ========== AI-Enhanced Form Field ========== */
 .field-rail {
     display: flex;
     align-items: stretch;
-    border: 1px solid var(--bs-border-color, #d1d5db);
-    border-radius: .5rem;
+    border: 1.5px solid var(--cinza-200);
+    border-radius: var(--radius-md);
     overflow: hidden;
-    background: #fff;
+    background: white;
+    transition: all var(--transition-base);
+}
+
+.field-rail:focus-within {
+    border-color: var(--azul-400);
+    box-shadow: 0 0 0 3px hsla(211, 85%, 55%, 0.1);
 }
 
 .form-control-plain {
@@ -13,38 +19,91 @@
     border: 0;
     outline: 0;
     box-shadow: none;
-    padding: .75rem;
+    padding: 0.875rem;
     resize: vertical;
     min-height: 96px;
+    font-family: var(--font-sans);
+    color: var(--cinza-800);
+    line-height: 1.6;
+    transition: background var(--transition-base);
 }
 
-/* botão lateral mais escuro + hover */
+.form-control-plain::placeholder {
+    color: var(--cinza-400);
+}
+
+/* AI Button */
 .rail-btn {
-    width: 48px;
+    width: 52px;
     border: 0;
-    border-left: 1px solid var(--bs-border-color, #e5e7eb);
-    background: linear-gradient(180deg, rgba(59, 130, 246, .18), rgba(37, 99, 235, .12));
+    border-left: 1px solid var(--cinza-200);
+    background: linear-gradient(180deg,
+            hsla(211, 85%, 65%, 0.12),
+            hsla(211, 85%, 55%, 0.08));
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.rail-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+            hsla(211, 85%, 65%, 0.2),
+            hsla(211, 85%, 55%, 0.15));
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.rail-btn:hover::before {
+    opacity: 1;
 }
 
 .rail-btn:hover {
-    background: linear-gradient(180deg, rgba(59, 130, 246, .25), rgba(37, 99, 235, .18));
+    border-left-color: var(--azul-300);
 }
 
-/* foco no conjunto */
-.field-rail:focus-within {
-    border-color: #3B82F6;
-    box-shadow: 0 0 0 .2rem rgba(59, 130, 246, .12);
+.rail-btn:active {
+    transform: scale(0.95);
 }
 
+/* Sparkle Icon Animation */
+.rail-btn .sparkle {
+    transition: transform var(--transition-base);
+}
+
+.rail-btn:hover .sparkle {
+    transform: rotate(20deg) scale(1.1);
+    animation: sparkle 1s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: rotate(20deg) scale(1.1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: rotate(20deg) scale(1.2);
+    }
+}
+
+/* Loading State */
 .form-control-plain.loading {
-    background: linear-gradient(90deg, #f3f4f6 0%, #dbeafe 50%, #f3f4f6 100%);
+    background: linear-gradient(90deg,
+            var(--cinza-50) 0%,
+            var(--azul-50) 50%,
+            var(--cinza-50) 100%);
     background-size: 200% 100%;
     animation: loadingGradient 1.5s linear infinite;
-    /* linear para não "pausar" */
 }
 
 @keyframes loadingGradient {
@@ -57,12 +116,15 @@
     }
 }
 
-/* status dentro do campo: aparece/some suave */
+/* Status Text */
 #spellStatus {
     opacity: 0;
-    transform: translateY(2px);
-    transition: opacity .25s ease, transform .25s ease;
+    transform: translateY(4px);
+    transition: opacity var(--transition-base), transform var(--transition-base);
     pointer-events: none;
+    font-size: var(--text-xs);
+    color: var(--cinza-500);
+    font-weight: 500;
 }
 
 #spellStatus.is-visible {

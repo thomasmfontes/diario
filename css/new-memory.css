@@ -1,22 +1,130 @@
-/* Card geral (formulário) mais arredondado */
-.card {
-    border-radius: 1rem;
+/* ========== New Memory Form ========== */
+
+/* Collapse Animation */
+#memoryFormCollapse {
+    transition: all var(--transition-slow) ease-out;
 }
 
-/* Inputs e textarea mais arredondados */
-.form-control {
-    border-radius: 0.75rem;
+/* Form Labels */
+.form-label {
+    font-weight: 600;
+    color: var(--cinza-700);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-sm);
+    letter-spacing: 0.01em;
 }
 
-/* Botão salvar personalizado com rosa e bem arredondado */
-.btn-primary {
-    background-color: var(--rosa);
-    border-color: var(--rosa);
-    border-radius: 0.75rem;
-    /* mais arredondado */
+/* Form Controls */
+.form-control,
+.form-select {
+    background: white;
+    border: 1.5px solid var(--cinza-200);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+    font-size: var(--text-base);
+    transition: all var(--transition-base);
+    font-family: var(--font-sans);
 }
 
-.btn-primary:hover {
-    background-color: var(--rosa-escuro);
-    border-color: var(--rosa-escuro);
+.form-control:hover,
+.form-select:hover {
+    border-color: var(--cinza-300);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--rosa-400);
+    box-shadow: 0 0 0 3px hsla(340, 75%, 60%, 0.1);
+    outline: none;
+    background: white;
+}
+
+/* File Input */
+input[type="file"].form-control {
+    padding: 0.5rem 0.875rem;
+    cursor: pointer;
+}
+
+input[type="file"].form-control::-webkit-file-upload-button {
+    background: linear-gradient(135deg, var(--cinza-100) 0%, var(--cinza-200) 100%);
+    border: 1px solid var(--cinza-300);
+    border-radius: var(--radius-sm);
+    padding: 0.375rem 0.75rem;
+    margin-right: 0.75rem;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--cinza-700);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+input[type="file"].form-control::-webkit-file-upload-button:hover {
+    background: linear-gradient(135deg, var(--cinza-200) 0%, var(--cinza-300) 100%);
+    transform: translateY(-1px);
+}
+
+/* Date Input */
+input[type="date"].form-control {
+    cursor: pointer;
+}
+
+/* Textarea */
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.6;
+}
+
+/* Submit Button */
+.btn-primary.w-100 {
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    font-size: var(--text-base);
+    letter-spacing: 0.02em;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.btn-primary.w-100:hover {
+    box-shadow: var(--shadow-rosa);
+    transform: translateY(-2px);
+}
+
+.btn-primary.w-100:active {
+    transform: translateY(0);
+}
+
+/* Helper Text */
+.text-muted.small,
+#imagesHelp {
+    font-size: var(--text-xs);
+    color: var(--cinza-500);
+    font-weight: 500;
+    margin-top: var(--space-xs);
+}
+
+/* Chevron Icon Animation */
+.bi-chevron-down {
+    transition: transform var(--transition-base);
+}
+
+[aria-expanded="true"] .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Card Body Padding */
+.card-body {
+    padding: var(--space-lg);
+}
+
+/* Collapse Header Hover */
+[data-bs-toggle="collapse"] {
+    transition: all var(--transition-base);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm);
+    margin: calc(-1 * var(--space-sm));
+}
+
+[data-bs-toggle="collapse"]:hover {
+    background: var(--rosa-50);
 }

@@ -1,4 +1,5 @@
 import { db } from './config.js';
+import { showToast } from './ui.js';
 import { getCurrentUser } from './user.js';
 
 let unsubscribeCartinhas = null;
@@ -57,10 +58,7 @@ export function initMessages() {
 
         db.collection('messages').add(message).then(() => {
             messageText.value = '';
-
-            const toastEl = document.getElementById('messageToast');
-            const toast = new bootstrap.Toast(toastEl);
-            toast.show();
+            showToast('Mensagem enviada! 💌', 'success');
         });
     });
 

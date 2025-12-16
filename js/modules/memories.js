@@ -1,6 +1,6 @@
 import { db } from './config.js';
 import { formatDate, toBase64Compressed } from './utils.js';
-import { renderGallery, initPendingSwipers } from './ui.js';
+import { renderGallery, initPendingSwipers, showToast } from './ui.js';
 
 let currentOrder = 'asc';
 let pendingDelete = null;
@@ -60,13 +60,13 @@ export function initMemories() {
             form.reset();
             imageInput.nextElementSibling.textContent = 'Nenhuma selecionada';
 
-            // Success feedback
-            alert('Memória salva com sucesso!');
+            // Success feedback via toast
+            showToast('Memória salva com sucesso!', 'success');
 
         } catch (error) {
             console.error('Erro em handleAddImages:', error); // Log original error
             const msg = error instanceof Error ? error.message : String(error); // Extract message safe
-            alert(`Erro ao salvar: ${msg}`);
+            showToast(`Erro ao salvar: ${msg}`, 'danger');
         } finally {
             // Restore UI
             submitBtn.disabled = false;
@@ -235,7 +235,7 @@ async function handleAddImages() {
     } catch (err) {
         console.error('Erro em handleAddImages:', err);
         const msg = err instanceof Error ? err.message : String(err);
-        alert('Falha ao adicionar fotos: ' + msg);
+        showToast('Falha ao adicionar fotos: ' + msg, 'danger');
     }
 }
 

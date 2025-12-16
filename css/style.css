@@ -306,3 +306,53 @@ body {
     font-weight: 600;
     font-size: var(--text-xs);
 }
+
+/* ========== Toast (Modern) ========== */
+#toastContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none; /* allow clicks through except on toasts */
+}
+
+#toastContainer .toast {
+    pointer-events: auto;
+}
+
+.toast-modern {
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.toast-modern .toast-body {
+    font-weight: 600;
+}
+
+.toast-modern.show {
+    animation: slideIn 220ms ease-out;
+}
+
+.toast-modern.hide {
+    animation: fadeIn 200ms ease-in reverse;
+}
+
+/* Type variants tweaks */
+.toast-modern.text-bg-success {
+    background-image: linear-gradient(135deg, hsl(145, 64%, 40%), hsl(145, 64%, 45%));
+}
+
+.toast-modern.text-bg-danger {
+    background-image: linear-gradient(135deg, hsl(0, 80%, 45%), hsl(0, 80%, 50%));
+}
+
+.toast-modern.text-bg-warning {
+    color: #1b1b1b !important;
+    background-image: linear-gradient(135deg, hsl(40, 95%, 55%), hsl(40, 95%, 60%));
+}
+
+.toast-modern.text-bg-primary {
+    background-image: linear-gradient(135deg, var(--azul-600), var(--azul-500));
+}

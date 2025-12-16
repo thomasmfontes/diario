@@ -1,0 +1,194 @@
+[1mdiff --git a/css/style.css b/css/style.css[m
+[1mindex 9a4daa7..f29a8b7 100644[m
+[1m--- a/css/style.css[m
+[1m+++ b/css/style.css[m
+[36m@@ -305,4 +305,54 @@[m [mbody {[m
+     transition: width var(--transition-slow) ease-out;[m
+     font-weight: 600;[m
+     font-size: var(--text-xs);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* ========== Toast (Modern) ========== */[m
+[32m+[m[32m#toastContainer {[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    flex-direction: column;[m
+[32m+[m[32m    gap: 10px;[m
+[32m+[m[32m    pointer-events: none; /* allow clicks through except on toasts */[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#toastContainer .toast {[m
+[32m+[m[32m    pointer-events: auto;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.toast-modern {[m
+[32m+[m[32m    border-radius: var(--radius-lg);[m
+[32m+[m[32m    backdrop-filter: blur(var(--glass-blur-sm));[m
+[32m+[m[32m    -webkit-backdrop-filter: blur(var(--glass-blur-sm));[m
+[32m+[m[32m    box-shadow: var(--shadow-md);[m
+[32m+[m[32m    overflow: hidden;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.toast-modern .toast-body {[m
+[32m+[m[32m    font-weight: 600;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.toast-modern.show {[m
+[32m+[m[32m    animation: slideIn 220ms ease-out;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.toast-modern.hide {[m
+[32m+[m[32m    animation: fadeIn 200ms ease-in reverse;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/* Type variants tweaks */[m
+[32m+[m[32m.toast-modern.text-bg-success {[m
+[32m+[m[32m    background-image: linear-gradient(135deg, hsl(145, 64%, 40%), hsl(145, 64%, 45%));[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.toast-modern.text-bg-danger {[m
+[32m+[m[32m    background-image: linear-gradient(135deg, hsl(0, 80%, 45%), hsl(0, 80%, 50%));[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.toast-modern.text-bg-warning {[m
+[32m+[m[32m    color: #1b1b1b !important;[m
+[32m+[m[32m    background-image: linear-gradient(135deg, hsl(40, 95%, 55%), hsl(40, 95%, 60%));[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.toast-modern.text-bg-primary {[m
+[32m+[m[32m    background-image: linear-gradient(135deg, var(--azul-600), var(--azul-500));[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/index.html b/index.html[m
+[1mindex 8cf3293..ec3e610 100644[m
+[1m--- a/index.html[m
+[1m+++ b/index.html[m
+[36m@@ -90,18 +90,8 @@[m
+             </form>[m
+         </div>[m
+ [m
+[31m-        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">[m
+[31m-            <div id="messageToast" class="toast align-items-center text-bg-success border-0" role="alert"[m
+[31m-                aria-live="assertive" aria-atomic="true">[m
+[31m-                <div class="d-flex">[m
+[31m-                    <div class="toast-body">[m
+[31m-                        Mensagem enviada! 💌[m
+[31m-                    </div>[m
+[31m-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"[m
+[31m-                        aria-label="Close"></button>[m
+[31m-                </div>[m
+[31m-            </div>[m
+[31m-        </div>[m
+[32m+[m[32m        <!-- Toast Container for general notifications -->[m
+[32m+[m[32m        <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11"></div>[m
+ [m
+         <!-- Nova Memória -->[m
+         <section class="pointer card mb-4">[m
+[1mdiff --git a/js/modules/memories.js b/js/modules/memories.js[m
+[1mindex 0f43aed..7c43eca 100644[m
+[1m--- a/js/modules/memories.js[m
+[1m+++ b/js/modules/memories.js[m
+[36m@@ -1,6 +1,6 @@[m
+ import { db } from './config.js';[m
+ import { formatDate, toBase64Compressed } from './utils.js';[m
+[31m-import { renderGallery, initPendingSwipers } from './ui.js';[m
+[32m+[m[32mimport { renderGallery, initPendingSwipers, showToast } from './ui.js';[m
+ [m
+ let currentOrder = 'asc';[m
+ let pendingDelete = null;[m
+[36m@@ -60,13 +60,13 @@[m [mexport function initMemories() {[m
+             form.reset();[m
+             imageInput.nextElementSibling.textContent = 'Nenhuma selecionada';[m
+ [m
+[31m-            // Success feedback[m
+[31m-            alert('Memória salva com sucesso!');[m
+[32m+[m[32m            // Success feedback via toast[m
+[32m+[m[32m            showToast('Memória salva com sucesso!', 'success');[m
+ [m
+         } catch (error) {[m
+             console.error('Erro em handleAddImages:', error); // Log original error[m
+             const msg = error instanceof Error ? error.message : String(error); // Extract message safe[m
+[31m-            alert(`Erro ao salvar: ${msg}`);[m
+[32m+[m[32m            showToast(`Erro ao salvar: ${msg}`, 'danger');[m
+         } finally {[m
+             // Restore UI[m
+             submitBtn.disabled = false;[m
+[36m@@ -235,7 +235,7 @@[m [masync function handleAddImages() {[m
+     } catch (err) {[m
+         console.error('Erro em handleAddImages:', err);[m
+         const msg = err instanceof Error ? err.message : String(err);[m
+[31m-        alert('Falha ao adicionar fotos: ' + msg);[m
+[32m+[m[32m        showToast('Falha ao adicionar fotos: ' + msg, 'danger');[m
+     }[m
+ }[m
+ [m
+[1mdiff --git a/js/modules/messages.js b/js/modules/messages.js[m
+[1mindex 09d9cbc..83ab425 100644[m
+[1m--- a/js/modules/messages.js[m
+[1m+++ b/js/modules/messages.js[m
+[36m@@ -1,4 +1,5 @@[m
+ import { db } from './config.js';[m
+[32m+[m[32mimport { showToast } from './ui.js';[m
+ import { getCurrentUser } from './user.js';[m
+ [m
+ let unsubscribeCartinhas = null;[m
+[36m@@ -57,10 +58,7 @@[m [mexport function initMessages() {[m
+ [m
+         db.collection('messages').add(message).then(() => {[m
+             messageText.value = '';[m
+[31m-[m
+[31m-            const toastEl = document.getElementById('messageToast');[m
+[31m-            const toast = new bootstrap.Toast(toastEl);[m
+[31m-            toast.show();[m
+[32m+[m[32m            showToast('Mensagem enviada! 💌', 'success');[m
+         });[m
+     });[m
+ [m
+[1mdiff --git a/js/modules/ui.js b/js/modules/ui.js[m
+[1mindex f953956..aff2686 100644[m
+[1m--- a/js/modules/ui.js[m
+[1m+++ b/js/modules/ui.js[m
+[36m@@ -52,22 +52,29 @@[m [mexport function renderGallery(images) {[m
+   `;[m
+ }[m
+ [m
+[31m-export function showToast(message, type = 'primary') {[m
+[32m+[m[32mexport function showToast(message, type = 'primary', options = {}) {[m
+   const container = document.getElementById('toastContainer');[m
+   if (!container) return;[m
+ [m
+[32m+[m[32m  const { duration = 4000 } = options;[m
+[32m+[m
+   const id = 'toast-' + Math.random().toString(36).slice(2);[m
+   const bgClass = type === 'success' ? 'text-bg-success' :[m
+     type === 'danger' ? 'text-bg-danger' :[m
+       type === 'warning' ? 'text-bg-warning' : 'text-bg-primary';[m
+ [m
+[32m+[m[32m  const icon = type === 'success' ? 'bi-check-circle-fill' :[m
+[32m+[m[32m    type === 'danger' ? 'bi-exclamation-octagon-fill' :[m
+[32m+[m[32m      type === 'warning' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill';[m
+[32m+[m
+   const toastHtml = `[m
+[31m-        <div id="${id}" class="toast align-items-center ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">[m
+[31m-            <div class="d-flex">[m
+[31m-                <div class="toast-body">[m
+[31m-                    ${message}[m
+[32m+[m[32m        <div id="${id}" class="toast toast-modern align-items-center ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">[m
+[32m+[m[32m            <div class="d-flex align-items-center">[m
+[32m+[m[32m                <div class="toast-body d-flex align-items-center gap-2">[m
+[32m+[m[32m                    <i class="bi ${icon}"></i>[m
+[32m+[m[32m                    <span>${message}</span>[m
+                 </div>[m
+[31m-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>[m
+[32m+[m[32m                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>[m
+             </div>[m
+         </div>[m
+     `;[m
+[36m@@ -75,7 +82,7 @@[m [mexport function showToast(message, type = 'primary') {[m
+   container.insertAdjacentHTML('beforeend', toastHtml);[m
+ [m
+   const toastEl = document.getElementById(id);[m
+[31m-  const toast = new bootstrap.Toast(toastEl);[m
+[32m+[m[32m  const toast = new bootstrap.Toast(toastEl, { delay: duration, autohide: true });[m
+ [m
+   toastEl.addEventListener('hidden.bs.toast', () => {[m
+     toastEl.remove();[m

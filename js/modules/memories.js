@@ -23,22 +23,52 @@ export function initMemories() {
     form.addEventListener('submit', async e => {
         e.preventDefault();
 
-        const files = Array.from(imageInput.files || []);
-        const images = await Promise.all(files.map(f => toBase64Compressed(f)));
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.textContent;
 
-        const memory = {
-            title: form.title.value,
-            message: form.message.value,
-            date: form.memoryDate.value,
-            autor: form.autor.value,
-            images: images.length ? images : null
-        };
+        try {
+            // UI Feedback
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Salvando...';
+            document.getElementById('loadingSpinner').classList.remove('d-none');
 
-        db.collection('memories').add(memory).then(() => {
+            const files = Array.from(imageInput.files || []);
+
+            // Validate file sizes (optional check before processing)
+            const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+            const largeFiles = files.filter(f => f.size > MAX_SIZE);
+            if (largeFiles.length > 0) {
+                throw new Error(`Algumas imagens são muito grandes (>10MB): ${largeFiles.map(f => f.name).join(', ')}`);
+            }
+
+            const images = await Promise.all(files.map(f => toBase64Compressed(f)));
+
+            const memory = {
+                title: form.title.value,
+                message: form.message.value,
+                date: form.memoryDate.value,
+                autor: form.autor.value,
+                images: images.length ? images : null
+            };
+
+            await db.collection('memories').add(memory);
+
             loadMemories();
             form.reset();
             imageInput.nextElementSibling.textContent = 'Nenhuma selecionada';
-        });
+
+            // Success feedback
+            alert('Memória salva com sucesso!');
+
+        } catch (error) {
+            console.error('Erro ao salvar memória:', error);
+            alert(`Erro ao salvar: ${error.message || 'Ocorreu um erro desconhecido.'}`);
+        } finally {
+            // Restore UI
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
+            document.getElementById('loadingSpinner').classList.add('d-none');
+        }
     });
 
     // Order toggle listener

@@ -24,13 +24,16 @@ export function initMemories() {
         e.preventDefault();
 
         const submitBtn = form.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn.textContent;
+        const spinner = submitBtn.querySelector('.spinner-border');
+        const btnText = submitBtn.querySelector('span:not(.spinner-border)');
+        const originalBtnText = btnText.textContent; // Changed from submitBtn.textContent to btnText.textContent
 
         try {
             // UI Feedback
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Salvando...';
-            document.getElementById('loadingSpinner').classList.remove('d-none');
+            spinner.classList.remove('d-none');
+            btnText.textContent = 'Salvando...';
+            // document.getElementById('loadingSpinner').classList.remove('d-none'); // Removed global spinner usage for this action
 
             const files = Array.from(imageInput.files || []);
 
@@ -61,13 +64,15 @@ export function initMemories() {
             alert('Memória salva com sucesso!');
 
         } catch (error) {
-            console.error('Erro ao salvar memória:', error);
-            alert(`Erro ao salvar: ${error.message || 'Ocorreu um erro desconhecido.'}`);
+            console.error('Erro em handleAddImages:', error); // Log original error
+            const msg = error instanceof Error ? error.message : String(error); // Extract message safe
+            alert(`Erro ao salvar: ${msg}`);
         } finally {
             // Restore UI
             submitBtn.disabled = false;
-            submitBtn.textContent = originalBtnText;
-            document.getElementById('loadingSpinner').classList.add('d-none');
+            spinner.classList.add('d-none');
+            btnText.textContent = originalBtnText;
+            // document.getElementById('loadingSpinner').classList.add('d-none');
         }
     });
 
@@ -228,8 +233,9 @@ async function handleAddImages() {
         // recarrega lista para refletir as novas fotos
         await loadMemories();
     } catch (err) {
-        console.error(err);
-        alert('Falha ao adicionar fotos: ' + (err?.message || err));
+        console.error('Erro em handleAddImages:', err);
+        const msg = err instanceof Error ? err.message : String(err);
+        alert('Falha ao adicionar fotos: ' + msg);
     }
 }
 

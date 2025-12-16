@@ -22,8 +22,8 @@ export function toBase64Compressed(file, maxWidth = 800, quality = 0.7) {
 
                 resolve(canvas.toDataURL('image/jpeg', quality));
             };
-            img.onerror = reject;
+            img.onerror = () => reject(new Error('Falha ao processar a imagem (img load error).'));
         };
-        reader.onerror = reject;
+        reader.onerror = () => reject(new Error('Falha ao ler o arquivo (reader error).'));
     });
 }

@@ -17,8 +17,27 @@ const messaging = firebase.messaging();
 // Handler opcional para plano de fundo se quiser customizar
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Recebida mensagem em segundo plano: ', payload);
-    // Nota: O Firebase SDK já exibe automaticamente a notificação se o payload contiver o campo 'notification'.
-    // Chamar showNotification manualmente aqui causaria uma notificação duplicada.
+});
+
+// Lógica para abrir o diário ao clicar na notificação
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    // Tenta encontrar uma janela aberta e focar nela, ou abre uma nova
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then((windowClients) => {
+                for (let i = 0; i < windowClients.length; i++) {
+                    const client = windowClients[i];
+                    if (client.url === '/' || client.url.includes(self.location.origin)) {
+                        return client.focus();
+                    }
+                }
+                if (clients.openWindow) {
+                    return clients.openWindow('/');
+                }
+            })
+    );
 });
 
 const CACHE_NAME = 'diario-v1';

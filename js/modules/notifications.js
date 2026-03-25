@@ -13,11 +13,10 @@ export async function initNotifications(swRegistration) {
             console.warn('Permissão para notificações negada.');
         }
 
-        // Lidar com mensagens em primeiro plano
+        // Lidar com mensagens em primeiro plano (opcional)
         messaging.onMessage((payload) => {
             console.log('Mensagem recebida em primeiro plano:', payload);
-            const { title, body } = payload.notification;
-            showToast(`${title}: ${body}`, 'info');
+            // Removida a notificação interna (toast) a pedido do usuário
         });
 
     } catch (error) {

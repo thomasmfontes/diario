@@ -70,6 +70,12 @@
                 <i class="bi bi-envelope-heart"></i>
             </button>
 
+            <!-- Botão Notificações Header -->
+            <button id="notif-header-btn" class="btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-3 d-none" 
+                style="margin-right: 4.5rem !important;" title="Status de Notificação">
+                <i class="bi bi-bell"></i>
+            </button>
+
             <!-- Botão Trocar Usuário -->
             <button id="userSwitcher" class="btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-3"
                 title="Trocar usuário" onclick="trocarUsuario()">
@@ -245,6 +251,14 @@
                         <button class="btn btn-gabriela m-2 px-4 rounded-pill" onclick="setUser('Gabriela')">
                             <i class="bi bi-person-fill"></i> Gabriela
                         </button>
+
+                        <div id="notif-opt-in-container" class="mt-4">
+                            <hr class="mx-5 opacity-25">
+                            <div id="notif-status" class="small text-muted mb-2"></div>
+                            <button id="btn-enable-notif" class="btn btn-link btn-sm text-decoration-none text-muted">
+                                <i class="bi bi-bell-fill"></i> Ativar notificações push
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -60,7 +60,11 @@ export function initMemories() {
             fetch('/api/notify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'memory', data: memory })
+                body: JSON.stringify({ 
+                    title: '📸 Nova Memória salva!',
+                    body: `${memory.autor} acabou de salvar uma nova memória: ${memory.title}`,
+                    authorName: memory.autor
+                })
             }).catch(err => console.error('Erro ao disparar notificação:', err));
 
             loadMemories();

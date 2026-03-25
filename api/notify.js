@@ -93,11 +93,36 @@ export default async function handler(req, res) {
             webpush: payload.webpush
         });
 
-        console.log(`Successfully sent ${response.successCount} messages.`);
+        // 3. Limpeza de tokens inválidos
+        const tokensParaRemover = [];
+        const errors = [];
+        response.responses.forEach((resp, idx) => {
+            if (!resp.success) {
+                const errorCode = resp.error?.code;
+                const tokenFaulty = tokens[idx];
+                errors.push({ token: tokenFaulty, error: errorCode });
+                
+                // Se o token não estiver mais registrado, marcamos para remover
+                if (errorCode === 'messaging/registration-token-not-registered' || 
+                    errorCode === 'messaging/invalid-registration-token') {
+                    tokensParaRemover.push(db.collection('fcm_tokens').doc(tokenFaulty).delete());
+                }
+            }
+        });
+
+        if (tokensParaRemover.length > 0) {
+            await Promise.all(tokensParaRemover);
+            console.log(`[DEBUG] Removidos ${tokensParaRemover.length} tokens inválidos.`);
+        }
+
+        console.log(`Successfully processed multicast send. Success: ${response.successCount}, Failure: ${response.failureCount}`);
+        
         return res.status(200).json({ 
             success: true, 
             sent: response.successCount, 
-            failed: response.failureCount 
+            failed: response.failureCount,
+            errors: errors,
+            tokensTargeted: tokens.length
         });
 
     } catch (error) {

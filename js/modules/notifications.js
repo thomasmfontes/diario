@@ -34,6 +34,7 @@ async function saveToken(swRegistration) {
         
         if (currentToken) {
             const user = localStorage.getItem('currentUser') || 'Desconhecido';
+            console.log(`[DEBUG] Salvando token para usuário: ${user}`);
             
             // Salva ou atualiza o token no Firestore
             await db.collection(COLLECTION_TOKENS).doc(currentToken).set({

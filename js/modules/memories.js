@@ -126,6 +126,17 @@ export function loadMemories() {
 
         // após carregar todos os cards, inicializar sliders
         initPendingSwipers();
+    }).catch(err => {
+        console.error('Erro ao carregar memórias:', err);
+        document.getElementById('loadingSpinner').classList.add('d-none');
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="alert alert-warning d-inline-block">
+                    <p class="mb-2">⚠️ Ops! Tivemos um problema ao carregar as memórias.</p>
+                    <button class="btn btn-primary btn-sm" onclick="loadMemories()">Tentar novamente</button>
+                </div>
+            </div>
+        `;
     });
 }
 

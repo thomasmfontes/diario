@@ -89,10 +89,24 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Só intercepta requisições GET
+    if (event.request.method !== 'GET') return;
+
+    const url = new URL(event.request.url);
+    const isLocal = url.origin === self.location.origin;
+    const isCdnAsset = ASSETS.some(asset => asset.startsWith('http') && event.request.url === asset);
+
+    // Se não for arquivo local nem um asset de CDN conhecido, deixa o navegador lidar (Firestore, Google APIs, etc)
+    if (!isLocal && !isCdnAsset) {
+        return;
+    }
+
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                return response || fetch(event.request);
-            })
+        caches.match(event.request).then(response => {
+            return response || fetch(event.request).catch(() => {
+                // Se falhar o fetch e não tiver no cache, apenas retorna falha
+                return null;
+            });
+        })
     );
 });

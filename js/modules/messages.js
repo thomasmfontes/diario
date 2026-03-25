@@ -159,5 +159,7 @@ export function checkForMessage() {
                     modal.show();
                 }
             }
+        }, err => {
+            console.error('Erro ao verificar novas mensagens (background):', err);
         });
 }

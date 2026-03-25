@@ -1,3 +1,31 @@
+importScripts('https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.1/firebase-messaging-compat.js');
+
+// Configuração do Firebase (copiada do config.js por questões de escopo de SW)
+const firebaseConfig = {
+    apiKey: "AIzaSyDpGm8cbfEo2HnbAETxev1fZg9M9LDats4",
+    authDomain: "nosso-diario-bdb66.firebaseapp.com",
+    projectId: "nosso-diario-bdb66",
+    storageBucket: "nosso-diario-bdb66.firebasestorage.app",
+    messagingSenderId: "555433356561",
+    appId: "1:555433356561:web:1918c584efe64fb8e8f0b0"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+// Handler opcional para plano de fundo se quiser customizar
+messaging.onBackgroundMessage((payload) => {
+    console.log('[firebase-messaging-sw.js] Recebida mensagem em segundo plano: ', payload);
+    const notificationTitle = payload.notification.title;
+    const notificationOptions = {
+        body: payload.notification.body,
+        icon: '/img/favicon.ico'
+    };
+
+    self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
 const CACHE_NAME = 'diario-v1';
 const ASSETS = [
     './',

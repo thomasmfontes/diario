@@ -57,6 +57,13 @@ export function initMessages() {
         };
 
         db.collection('messages').add(message).then(() => {
+            // Disparar notificação via Vercel API
+            fetch('/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'message', data: message })
+            }).catch(err => console.error('Erro ao disparar notificação:', err));
+
             messageText.value = '';
             showToast('Mensagem enviada! 💌', 'success');
         });

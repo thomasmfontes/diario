@@ -14,3 +14,4 @@ if (!firebase.apps.length) {
 }
 
 export const db = firebase.firestore();
+export const messaging = firebase.messaging();

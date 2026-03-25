@@ -1,0 +1,10 @@
+{
+  "name": "diario-vercel-api",
+  "version": "1.0.0",
+  "description": "API para notificações do Nosso Diário",
+  "main": "api/notify.js",
+  "dependencies": {
+    "google-auth-library": "^9.0.0",
+    "firebase-admin": "^12.0.0"
+  }
+}

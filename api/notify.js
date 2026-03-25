@@ -17,21 +17,24 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { type, data } = req.body;
+    const { title: reqTitle, body: reqBody, authorName: reqAuthor, type, data } = req.body;
 
     try {
-        let title = '';
-        let body = '';
-        const authorName = data.autor || data.from;
+        // Fallback para o novo formato ou formato antigo
+        let authorName = reqAuthor || data?.autor || data?.from || 'Alguém';
+        let title = reqTitle;
+        let body = reqBody;
 
-        if (type === 'memory') {
-            title = '📷 Nova memória no Diário';
-            body = `${authorName} registrou: "${data.title}"`;
-        } else if (type === 'message') {
-            title = '💌 Você recebeu uma cartinha!';
-            body = `${authorName} enviou uma cartinha para você.`;
-        } else {
-            return res.status(400).json({ error: 'Invalid notification type' });
+        if (!title) {
+            if (type === 'memory') {
+                title = '📸 Nova memória no Diário';
+                body = `${authorName} registrou: "${data?.title || 'uma memória'}"`;
+            } else if (type === 'message') {
+                title = '💌 Você recebeu uma cartinha!';
+                body = `${authorName} enviou uma cartinha para você.`;
+            } else {
+                return res.status(400).json({ error: 'Invalid notification payload' });
+            }
         }
 
         // 1. Buscar tokens no Firestore

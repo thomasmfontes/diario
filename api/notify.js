@@ -30,7 +30,7 @@ export default async function handler(req, res) {
                 title = '📸 Nova memória no Diário';
                 body = `${authorName} registrou: "${data?.title || 'uma memória'}"`;
             } else if (type === 'message') {
-                title = '💌 Você recebeu uma cartinha!';
+                title = '💌 Nova cartinha!';
                 body = `${authorName} enviou uma cartinha para você.`;
             } else {
                 return res.status(400).json({ error: 'Invalid notification payload' });

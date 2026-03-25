@@ -65,7 +65,10 @@ export function initMemories() {
                     body: `${memory.autor} acabou de salvar uma nova memória: ${memory.title}`,
                     authorName: memory.autor
                 })
-            }).catch(err => console.error('Erro ao disparar notificação:', err));
+            })
+            .then(response => response.json())
+            .then(data => console.log('[DEBUG] Resposta da notificação:', data))
+            .catch(err => console.error('Erro ao disparar notificação:', err));
 
             loadMemories();
             form.reset();

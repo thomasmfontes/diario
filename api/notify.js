@@ -40,21 +40,33 @@ export default async function handler(req, res) {
         // 1. Buscar tokens no Firestore
         const tokensSnapshot = await db.collection('fcm_tokens').get();
         const rawTokens = [];
+        const registeredUsers = [];
         
+        console.log(`[DEBUG] Buscando tokens. Autor da mensagem: ${authorName}`);
+
         tokensSnapshot.forEach(doc => {
             const tokenData = doc.data();
+            registeredUsers.push(tokenData.user);
             // Não envia para o próprio autor
             if (tokenData.user !== authorName) {
                 rawTokens.push(tokenData.token);
             }
         });
 
+        console.log(`[DEBUG] Usuários com tokens registrados: ${registeredUsers.join(', ')}`);
+
         // Remove duplicatas (caso o mesmo token exista em documentos diferentes por erro)
         const tokens = [...new Set(rawTokens)];
 
         if (tokens.length === 0) {
-            return res.status(200).json({ message: 'No tokens found for recipient' });
+            console.log(`[DEBUG] Nenhum token encontrado para destinatários (Autor: ${authorName})`);
+            return res.status(200).json({ 
+                message: 'No tokens found for recipient',
+                registeredUsers: registeredUsers
+            });
         }
+
+        console.log(`[DEBUG] Enviando para ${tokens.length} tokens únicos.`);
 
         // 2. Enviar via Firebase Admin
         const host = req.headers.host;

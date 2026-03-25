@@ -66,7 +66,10 @@ export function initMessages() {
                     body: `${currentUser} enviou uma cartinha para você.`,
                     authorName: currentUser
                 })
-            }).catch(err => console.error('Erro ao disparar notificação:', err));
+            })
+            .then(response => response.json())
+            .then(data => console.log('[DEBUG] Resposta da notificação:', data))
+            .catch(err => console.error('Erro ao disparar notificação:', err));
 
             messageText.value = '';
             showToast('Mensagem enviada! 💌', 'success');

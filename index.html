@@ -48,39 +48,23 @@
     <meta name="twitter:image" content="https://thomasmfontes.github.io/diario/capa.jpg">
 </head>
 
-<style>
-
-</style>
-
 <body>
-    <div class="container py-5">
+    <!-- Botão Cartinhas (Canto Superior Esquerdo) -->
+    <button id="btn-cartinhas" class="btn btn-outline-secondary btn-sm"
+        style="position: fixed; top: 20px; left: 20px; z-index: 1050;" title="Ver cartinhas">
+        <i class="bi bi-envelope-heart"></i>
+    </button>
 
+    <!-- Botão Trocar Usuário (Canto Superior Direito) -->
+    <button id="userSwitcher" class="btn btn-outline-secondary btn-sm"
+        style="position: fixed; top: 20px; right: 20px; z-index: 1050;" title="Trocar usuário" onclick="trocarUsuario()">
+        <i class="bi bi-person-fill"></i>
+    </button>
+
+    <div class="container py-5">
         <!-- Header -->
         <header class="text-center mb-3">
             <h1 class="title-font display-4 text-primary">Nosso Diário</h1>
-            <p class="lead text-muted">
-                Nossos momentos inesquecíveis
-                <span id="easterEggTrigger" class="pointer">❤️</span>
-            </p>
-            <p class="tg">T &amp; G</p>
-
-            <!-- Botão Cartinhas -->
-            <button id="btn-cartinhas" class="btn btn-outline-secondary btn-sm position-absolute top-0 start-0 m-3"
-                title="Ver cartinhas">
-                <i class="bi bi-envelope-heart"></i>
-            </button>
-
-            <!-- Botão Notificações Header -->
-            <button id="notif-header-btn" class="btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-3 d-none" 
-                style="margin-right: 4.5rem !important;" title="Status de Notificação">
-                <i class="bi bi-bell"></i>
-            </button>
-
-            <!-- Botão Trocar Usuário -->
-            <button id="userSwitcher" class="btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-3"
-                title="Trocar usuário" onclick="trocarUsuario()">
-                <i class="bi bi-person-fill"></i>
-            </button>
         </header>
 
         <!-- Easter Egg Form -->
@@ -252,12 +236,12 @@
                             <i class="bi bi-person-fill"></i> Gabriela
                         </button>
 
-                        <div id="notif-opt-in-container" class="mt-4">
-                            <hr class="mx-5 opacity-25">
-                            <div id="notif-status" class="small text-muted mb-2"></div>
-                            <button id="btn-enable-notif" class="btn btn-link btn-sm text-decoration-none text-muted">
-                                <i class="bi bi-bell-fill"></i> Ativar notificações push
-                            </button>
+                        <div id="notif-opt-in-container" class="mt-4 pt-2 border-top border-light">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <button id="btn-enable-notif" class="btn btn-outline-secondary btn-sm rounded-circle px-2" title="Alternar notificações">
+                                    <i class="bi bi-bell"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

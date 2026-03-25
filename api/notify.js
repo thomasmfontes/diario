@@ -40,20 +40,24 @@ export default async function handler(req, res) {
         // 1. Buscar tokens no Firestore
         const tokensSnapshot = await db.collection('fcm_tokens').get();
         const rawTokens = [];
-        const registeredUsers = [];
+        const registeredUsersInfo = [];
         
         console.log(`[DEBUG] Buscando tokens. Autor da mensagem: ${authorName}`);
 
         tokensSnapshot.forEach(doc => {
             const tokenData = doc.data();
-            registeredUsers.push(tokenData.user);
+            registeredUsersInfo.push({ 
+                user: tokenData.user, 
+                tokenPrefix: tokenData.token.substring(0, 5) + '...',
+                lastUpdated: tokenData.lastUpdated?.toDate ? tokenData.lastUpdated.toDate().toLocaleString() : 'N/A'
+            });
             // Não envia para o próprio autor
             if (tokenData.user !== authorName) {
                 rawTokens.push(tokenData.token);
             }
         });
 
-        console.log(`[DEBUG] Usuários com tokens registrados: ${registeredUsers.join(', ')}`);
+        console.log(`[DEBUG] Usuários com tokens registrados: ${registeredUsersInfo.map(u => u.user).join(', ')}`);
 
         // Remove duplicatas (caso o mesmo token exista em documentos diferentes por erro)
         const tokens = [...new Set(rawTokens)];
@@ -62,7 +66,8 @@ export default async function handler(req, res) {
             console.log(`[DEBUG] Nenhum token encontrado para destinatários (Autor: ${authorName})`);
             return res.status(200).json({ 
                 message: 'No tokens found for recipient',
-                registeredUsers: registeredUsers
+                author: authorName,
+                registeredUsers: registeredUsersInfo
             });
         }
 

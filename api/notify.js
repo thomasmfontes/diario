@@ -83,10 +83,12 @@ export default async function handler(req, res) {
             notification: {
                 title: title,
                 body: body,
-                icon: iconUrl,
             },
             webpush: {
-                fcm_options: {
+                notification: {
+                    icon: iconUrl,
+                },
+                fcmOptions: {
                     link: `${baseUrl}/`
                 }
             }

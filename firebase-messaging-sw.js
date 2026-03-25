@@ -21,20 +21,24 @@ messaging.onBackgroundMessage((payload) => {
 
 // Lógica para abrir o diário ao clicar na notificação
 self.addEventListener('notificationclick', (event) => {
+    console.log('[firebase-messaging-sw.js] Notificação clicada');
     event.notification.close();
 
     // Tenta encontrar uma janela aberta e focar nela, ou abre uma nova
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((windowClients) => {
+                // Procura por uma aba já aberta com o nosso site
                 for (let i = 0; i < windowClients.length; i++) {
                     const client = windowClients[i];
-                    if (client.url === '/' || client.url.includes(self.location.origin)) {
+                    // Se a URL da aba atual começar com a origem do Service Worker, foca nela
+                    if (client.url.startsWith(self.location.origin)) {
                         return client.focus();
                     }
                 }
+                // Se não encontrar nenhuma, abre uma nova aba na home
                 if (clients.openWindow) {
-                    return clients.openWindow('/');
+                    return clients.openWindow(self.location.origin);
                 }
             })
     );
@@ -73,10 +77,15 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', event => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => cache.addAll(ASSETS))
     );
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', event => {

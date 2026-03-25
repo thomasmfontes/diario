@@ -54,14 +54,20 @@ export default async function handler(req, res) {
         }
 
         // 2. Enviar via Firebase Admin
+        const host = req.headers.host;
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        const baseUrl = `${protocol}://${host}`;
+        const iconUrl = `${baseUrl}/img/icon-192.png`;
+
         const payload = {
             notification: {
                 title: title,
                 body: body,
+                icon: iconUrl,
             },
             webpush: {
                 fcm_options: {
-                    link: 'https://nosso-diario-bdb66.firebaseapp.com/'
+                    link: `${baseUrl}/`
                 }
             }
         };

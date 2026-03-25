@@ -37,7 +37,6 @@ async function saveToken(swRegistration) {
             const user = localStorage.getItem('currentUser') || 'Desconhecido';
             
             // Salva ou atualiza o token no Firestore
-            // Usamos o token como ID para evitar duplicatas
             await db.collection(COLLECTION_TOKENS).doc(currentToken).set({
                 token: currentToken,
                 user: user,
@@ -46,10 +45,29 @@ async function saveToken(swRegistration) {
             }, { merge: true });
             
             console.log('Token FCM salvo com sucesso.');
+            localStorage.setItem('notificationsEnabled', 'true');
         } else {
-            console.warn('Nenhum token disponível. Verifique as configurações do Firebase Messaging.');
+            console.warn('Nenhum token disponível.');
         }
     } catch (error) {
         console.error('Erro ao salvar token:', error);
+    }
+}
+
+export async function removeNotifications(swRegistration) {
+    try {
+        const currentToken = await messaging.getToken({
+            serviceWorkerRegistration: swRegistration
+        });
+        
+        if (currentToken) {
+            await db.collection(COLLECTION_TOKENS).doc(currentToken).delete();
+            console.log('Token FCM removido do servidor.');
+        }
+        
+        localStorage.setItem('notificationsEnabled', 'false');
+        showToast('Notificações desativadas para este dispositivo. 🔕', 'info');
+    } catch (error) {
+        console.error('Erro ao desativar notificações:', error);
     }
 }

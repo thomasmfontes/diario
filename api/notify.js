@@ -87,6 +87,7 @@ export default async function handler(req, res) {
             webpush: {
                 notification: {
                     icon: iconUrl,
+                    badge: `${baseUrl}/img/drawable-xxhdpi/badge-72.png`,
                 },
                 fcmOptions: {
                     link: `${baseUrl}/`

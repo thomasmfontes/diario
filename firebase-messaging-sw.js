@@ -14,9 +14,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Handler opcional para plano de fundo se quiser customizar
+// Handler para mensagens em segundo plano
 messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Recebida mensagem em segundo plano: ', payload);
+    console.log('[firebase-messaging-sw.js] Mensagem em segundo plano:', payload);
+    
+    const notificationTitle = payload.notification.title || 'Novo aviso';
+    const notificationOptions = {
+        body: payload.notification.body || 'Você tem uma nova mensagem.',
+        icon: payload.notification.icon || '/img/icon-192.png',
+        badge: '/img/drawable-xxhdpi/badge-72.png', // O ícone monocromático para a barra de status
+        data: payload.data
+    };
+
+    return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Lógica para abrir o diário ao clicar na notificação
@@ -49,6 +59,7 @@ const ASSETS = [
     './',
     './index.html',
     './manifest.json',
+    './img/drawable-xxhdpi/badge-72.png',
     './css/style.css',
     './css/header.css',
     './css/user.css',

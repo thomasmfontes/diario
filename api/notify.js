@@ -25,26 +25,29 @@ export default async function handler(req, res) {
         const authorName = data.autor || data.from;
 
         if (type === 'memory') {
-            title = '📷 Novo momento no Diário';
+            title = '📷 Nova memória no Diário';
             body = `${authorName} registrou: "${data.title}"`;
         } else if (type === 'message') {
             title = '💌 Você recebeu uma cartinha!';
-            body = `${authorName} enviou uma mensagem para você.`;
+            body = `${authorName} enviou uma cartinha para você.`;
         } else {
             return res.status(400).json({ error: 'Invalid notification type' });
         }
 
         // 1. Buscar tokens no Firestore
         const tokensSnapshot = await db.collection('fcm_tokens').get();
-        const tokens = [];
+        const rawTokens = [];
         
         tokensSnapshot.forEach(doc => {
             const tokenData = doc.data();
             // Não envia para o próprio autor
             if (tokenData.user !== authorName) {
-                tokens.push(tokenData.token);
+                rawTokens.push(tokenData.token);
             }
         });
+
+        // Remove duplicatas (caso o mesmo token exista em documentos diferentes por erro)
+        const tokens = [...new Set(rawTokens)];
 
         if (tokens.length === 0) {
             return res.status(200).json({ message: 'No tokens found for recipient' });

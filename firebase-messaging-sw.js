@@ -17,13 +17,8 @@ const messaging = firebase.messaging();
 // Handler opcional para plano de fundo se quiser customizar
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Recebida mensagem em segundo plano: ', payload);
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-        body: payload.notification.body,
-        icon: '/img/favicon.ico'
-    };
-
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    // Nota: O Firebase SDK já exibe automaticamente a notificação se o payload contiver o campo 'notification'.
+    // Chamar showNotification manualmente aqui causaria uma notificação duplicada.
 });
 
 const CACHE_NAME = 'diario-v1';

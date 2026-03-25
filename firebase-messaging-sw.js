@@ -16,14 +16,16 @@ const messaging = firebase.messaging();
 
 // Handler para mensagens em segundo plano
 messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Mensagem em segundo plano:', payload);
+    console.log('[firebase-messaging-sw.js] Mensagem em segundo plano (Data):', payload);
     
-    const notificationTitle = payload.notification.title || 'Novo aviso';
+    // Agora os dados vêm em payload.data porque desativamos o auto-display do SDK
+    const data = payload.data || {};
+    const notificationTitle = data.title || 'Novo aviso';
     const notificationOptions = {
-        body: payload.notification.body || 'Você tem uma nova mensagem.',
-        icon: payload.notification.icon || '/img/icon-192.png',
-        badge: '/img/drawable-xxhdpi/badge-72.png', // O ícone monocromático para a barra de status
-        data: payload.data
+        body: data.body || 'Você tem uma nova mensagem.',
+        icon: data.icon || '/img/icon-192.png',
+        badge: data.badge || '/img/drawable-xxhdpi/badge-72.png',
+        data: data
     };
 
     return self.registration.showNotification(notificationTitle, notificationOptions);

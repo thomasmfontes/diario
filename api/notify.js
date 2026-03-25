@@ -80,25 +80,21 @@ export default async function handler(req, res) {
         const iconUrl = `${baseUrl}/img/icon-192.png`;
 
         const payload = {
-            notification: {
+            data: {
                 title: title,
                 body: body,
-            },
-            webpush: {
-                notification: {
-                    icon: iconUrl,
-                    badge: `${baseUrl}/img/drawable-xxhdpi/badge-72.png`,
-                },
-                fcmOptions: {
-                    link: `${baseUrl}/`
-                }
+                icon: iconUrl,
+                badge: `${baseUrl}/img/drawable-xxhdpi/badge-72.png`,
+                click_action: `${baseUrl}/`,
+                authorName: authorName,
+                type: type || ''
             }
         };
 
         const response = await admin.messaging().sendEachForMulticast({
             tokens: tokens,
-            notification: payload.notification,
-            webpush: payload.webpush
+            data: payload.data,
+            // Removendo 'notification' e 'webpush' para evitar o auto-display do SDK
         });
 
         // 3. Limpeza de tokens inválidos

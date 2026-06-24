@@ -122,32 +122,32 @@ function initCouponsDB() {
 // -------------------------------------------------------------
 function setupCountdown() {
     if (!document.getElementById('anniversaryCountdown')) {
-        const header = document.querySelector('header');
-        if (header) {
+        const memoriesSection = document.getElementById('memoriesSection');
+        if (memoriesSection) {
             const countdownHtml = `
-            <div id="anniversaryCountdown" class="card p-4 mb-4 text-center border-0 shadow-sm countdown-card">
-                <h4 class="text-primary mb-3 font-display" style="font-family: var(--font-display);">Falta pouco para o nosso 1º Ano! ❤️</h4>
-                <div class="d-flex justify-content-center gap-3">
-                    <div class="time-block p-2 rounded" style="min-width: 65px; background: rgba(231, 84, 128, 0.1);">
-                        <span id="countdown-days" class="display-6 fw-bold text-primary">00</span>
-                        <div class="small text-muted" style="font-size: 0.75rem;">Dias</div>
+            <div id="anniversaryCountdown" class="card mb-4 text-center border-0 countdown-card">
+                <h4 class="text-primary mb-3 font-display" style="font-family: var(--font-display); font-size: 1.25rem;">Falta pouco para o nosso 1º Ano! ❤️</h4>
+                <div class="countdown-container">
+                    <div class="countdown-time-block">
+                        <span id="countdown-days" class="countdown-value">00</span>
+                        <div class="countdown-label">Dias</div>
                     </div>
-                    <div class="time-block p-2 rounded" style="min-width: 65px; background: rgba(231, 84, 128, 0.1);">
-                        <span id="countdown-hours" class="display-6 fw-bold text-primary">00</span>
-                        <div class="small text-muted" style="font-size: 0.75rem;">Horas</div>
+                    <div class="countdown-time-block">
+                        <span id="countdown-hours" class="countdown-value">00</span>
+                        <div class="countdown-label">Horas</div>
                     </div>
-                    <div class="time-block p-2 rounded" style="min-width: 65px; background: rgba(231, 84, 128, 0.1);">
-                        <span id="countdown-minutes" class="display-6 fw-bold text-primary">00</span>
-                        <div class="small text-muted" style="font-size: 0.75rem;">Minutos</div>
+                    <div class="countdown-time-block">
+                        <span id="countdown-minutes" class="countdown-value">00</span>
+                        <div class="countdown-label">Minutos</div>
                     </div>
-                    <div class="time-block p-2 rounded" style="min-width: 65px; background: rgba(231, 84, 128, 0.1);">
-                        <span id="countdown-seconds" class="display-6 fw-bold text-primary">00</span>
-                        <div class="small text-muted" style="font-size: 0.75rem;">Segundos</div>
+                    <div class="countdown-time-block">
+                        <span id="countdown-seconds" class="countdown-value">00</span>
+                        <div class="countdown-label">Segundos</div>
                     </div>
                 </div>
             </div>
             `;
-            header.insertAdjacentHTML('afterend', countdownHtml);
+            memoriesSection.insertAdjacentHTML('beforebegin', countdownHtml);
         }
     }
 

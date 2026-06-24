@@ -56,7 +56,7 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-const CACHE_NAME = 'diario-v2';
+const CACHE_NAME = 'diario-v3';
 const ASSETS = [
     './',
     './index.html',

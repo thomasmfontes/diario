@@ -760,3 +760,78 @@ header .btn-anniversary:hover i,
 header .btn-anniversary:active {
     transform: translateY(0) scale(0.98);
 }
+
+/* ---------- Countdown Card (Before Anniversary) ---------- */
+.countdown-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+}
+
+.countdown-container {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.countdown-time-block {
+    flex: 1;
+    min-width: 60px;
+    max-width: 80px;
+    padding: 10px 4px;
+    border-radius: var(--radius-md);
+    background: rgba(231, 84, 128, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid rgba(231, 84, 128, 0.15);
+    transition: transform var(--transition-base);
+}
+
+.countdown-time-block:hover {
+    transform: translateY(-2px);
+    background: rgba(231, 84, 128, 0.12);
+}
+
+.countdown-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--rosa-600);
+    line-height: 1.2;
+}
+
+.countdown-label {
+    font-size: 0.7rem;
+    color: var(--cinza-600);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+/* Mobile responsive countdown style adjustment */
+@media (max-width: 480px) {
+    .countdown-card {
+        padding: 16px 12px;
+    }
+    
+    .countdown-container {
+        gap: 8px;
+    }
+    
+    .countdown-time-block {
+        min-width: 52px;
+        padding: 8px 2px;
+    }
+    
+    .countdown-value {
+        font-size: 1.5rem;
+    }
+    
+    .countdown-label {
+        font-size: 0.62rem;
+        letter-spacing: 0;
+    }
+}

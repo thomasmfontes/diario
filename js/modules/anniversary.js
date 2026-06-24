@@ -1,0 +1,831 @@
+import { db } from './config.js';
+import { getCurrentUser } from './user.js';
+import { showToast } from './ui.js';
+
+// Target date: 1st of July 2026
+const targetDate = new Date('2026-07-01T00:00:00');
+
+// Dating start date: 1st of July 2025
+const startDate = new Date('2025-07-01T00:00:00');
+
+// Playlist configuration for audio controller (with local URLs and web fallbacks)
+const tracks = [
+    { name: "Love in Mexico - Carmen María and Edu Espinal", url: "audio/Love in Mexico - Carmen María and Edu Espinal.mp3", fallback: "audio/Love in Mexico - Carmen María and Edu Espinal.mp3" },
+    { name: "Arms of Heaven - Aakash Gandhi", url: "audio/Arms of Heaven - Aakash Gandhi.mp3", fallback: "audio/Arms of Heaven - Aakash Gandhi.mp3" },
+    { name: "The Beauty of Love - Aakash Gandhi", url: "audio/The Beauty of Love - Aakash Gandhi.mp3", fallback: "audio/The Beauty of Love - Aakash Gandhi.mp3" },
+    { name: "The Engagement - Silent Partner", url: "audio/The Engagement - Silent Partner.mp3", fallback: "audio/The Engagement - Silent Partner.mp3" },
+    { name: "Young And Old Know Love - Puddle of Infinity", url: "audio/Young And Old Know Love - Puddle of Infinity.mp3", fallback: "audio/Young And Old Know Love - Puddle of Infinity.mp3" }
+];
+
+let currentTrackIndex = 0;
+const audio = new Audio();
+audio.loop = false;
+
+let currentSlideIndex = 0;
+let touchStartX = 0;
+let touchEndX = 0;
+let photoInterval = null;
+let typewriterInterval = null;
+let slideTimeout = null;
+const SLIDE_DURATION = 8000; // 8 segundos por slide
+let statsData = { days: 365, memories: 0, letters: 0 };
+let anniversaryPhotos = [];
+const preloadedImages = {};
+
+function preloadAnniversaryPhoto(index) {
+    if (anniversaryPhotos.length === 0) return;
+    const targetIdx = index % anniversaryPhotos.length;
+    const photo = anniversaryPhotos[targetIdx];
+    if (photo && photo.src && !preloadedImages[photo.src]) {
+        const img = new Image();
+        img.src = photo.src;
+        preloadedImages[photo.src] = img;
+    }
+}
+
+const loveLetterText = `Meu amor,
+
+Hoje celebramos 1 ano desde que decidimos começar a nossa jornada juntos, de mãos dadas. 365 dias repletos de sorrisos compartilhados, carinho sem limites, cumplicidade e momentos que agora vivem para sempre no nosso Diário e no meu coração.
+
+Obrigado por ser minha parceira de vida, por tornar meus dias mais bonitos e por me mostrar que o amor verdadeiro é leve, paciente e cheio de paz. Agradeço cada café da manhã, cada abraço e cada risada que me faz sentir em casa.
+
+Este é apenas o primeiro ano de muitos que ainda vamos construir juntos. Mal posso esperar pelo nosso futuro.
+
+Eu amo você, hoje, amanhã e para sempre! TIII AMUUUUU INFIDOIIIXXX ❤️`;
+
+// Check if anniversary has arrived (can override with ?testAnniversary=true)
+function isAnniversaryPassed() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('testAnniversary') === 'true') {
+        return true;
+    }
+    return new Date() >= targetDate;
+}
+
+export function initAnniversary() {
+    // 1. Initialize Coupons database collection
+    initCouponsDB();
+
+    // 2. Setup anniversary access
+    const isSpecialDay = isAnniversaryPassed();
+
+    if (!isSpecialDay) {
+        setupCountdown();
+        // Hide anniversary action buttons if before target date
+        const btnStory = document.getElementById('btn-story');
+        const btnCupons = document.getElementById('btn-cupons');
+        if (btnStory) btnStory.style.display = 'none';
+        if (btnCupons) btnCupons.style.display = 'none';
+    } else {
+        // Show anniversary action buttons
+        const btnStory = document.getElementById('btn-story');
+        const btnCupons = document.getElementById('btn-cupons');
+        if (btnStory) btnStory.style.display = 'inline-block';
+        if (btnCupons) btnCupons.style.display = 'inline-block';
+        
+        setupAnniversaryCelebration();
+    }
+}
+
+// -------------------------------------------------------------
+// Database & Coupons Initialization
+// -------------------------------------------------------------
+function initCouponsDB() {
+    const couponsRef = db.collection('coupons');
+    couponsRef.get().then(snapshot => {
+        if (snapshot.empty) {
+            console.log('[Anniversary] Inicializando coleção de cupons de amor...');
+            const defaultCoupons = [
+                { name: "Jantar Especial 🍕", description: "Um jantar romântico preparado pelo Thomas com menu personalizado.", status: "available", redeemedBy: null, redeemedAt: null },
+                { name: "Cinema VIP em Casa 🍿", description: "Sessão cinema com pipoca gourmet, doces e ela escolhe o filme sem veto.", status: "available", redeemedBy: null, redeemedAt: null },
+                { name: "Massagem de 30min 💆‍♀️", description: "Massagem relaxante com óleos perfumados e música tranquila.", status: "available", redeemedBy: null, redeemedAt: null },
+                { name: "Dia de Mimos Extremos ✨", description: "Um dia em que o Thomas faz todos os desejos razoáveis da Gabi.", status: "available", redeemedBy: null, redeemedAt: null },
+                { name: "Passeio Surpresa ✈️", description: "Um roteiro surpresa planejado inteiramente pelo Thomas para o final de semana.", status: "available", redeemedBy: null, redeemedAt: null },
+                { name: "Socorro TPM / Chocolates 🍫", description: "Entrega rápida do chocolate favorito dela acompanhado de um bilhetinho.", status: "available", redeemedBy: null, redeemedAt: null },
+                { name: "Café na Cama ☕", description: "Café da manhã completo servido na cama para acordar sorrindo.", status: "available", redeemedBy: null, redeemedAt: null }
+            ];
+            
+            const promises = defaultCoupons.map(coupon => couponsRef.add(coupon));
+            Promise.all(promises).then(() => {
+                console.log('[Anniversary] Cupons inicializados com sucesso.');
+            }).catch(err => {
+                console.error('[Anniversary] Erro ao salvar cupons:', err);
+            });
+        }
+    }).catch(err => {
+        console.error('[Anniversary] Erro ao buscar cupons:', err);
+    });
+}
+
+// -------------------------------------------------------------
+// Countdown Mode (Before Anniversary)
+// -------------------------------------------------------------
+function setupCountdown() {
+    if (!document.getElementById('anniversaryCountdown')) {
+        const header = document.querySelector('header');
+        if (header) {
+            const countdownHtml = `
+            <div id="anniversaryCountdown" class="card p-4 mb-4 text-center border-0 shadow-sm countdown-card">
+                <h4 class="text-primary mb-3 font-display" style="font-family: var(--font-display);">Falta pouco para o nosso 1º Ano! ❤️</h4>
+                <div class="d-flex justify-content-center gap-3">
+                    <div class="time-block p-2 rounded" style="min-width: 65px; background: rgba(231, 84, 128, 0.1);">
+                        <span id="countdown-days" class="display-6 fw-bold text-primary">00</span>
+                        <div class="small text-muted" style="font-size: 0.75rem;">Dias</div>
+                    </div>
+                    <div class="time-block p-2 rounded" style="min-width: 65px; background: rgba(231, 84, 128, 0.1);">
+                        <span id="countdown-hours" class="display-6 fw-bold text-primary">00</span>
+                        <div class="small text-muted" style="font-size: 0.75rem;">Horas</div>
+                    </div>
+                    <div class="time-block p-2 rounded" style="min-width: 65px; background: rgba(231, 84, 128, 0.1);">
+                        <span id="countdown-minutes" class="display-6 fw-bold text-primary">00</span>
+                        <div class="small text-muted" style="font-size: 0.75rem;">Minutos</div>
+                    </div>
+                    <div class="time-block p-2 rounded" style="min-width: 65px; background: rgba(231, 84, 128, 0.1);">
+                        <span id="countdown-seconds" class="display-6 fw-bold text-primary">00</span>
+                        <div class="small text-muted" style="font-size: 0.75rem;">Segundos</div>
+                    </div>
+                </div>
+            </div>
+            `;
+            header.insertAdjacentHTML('afterend', countdownHtml);
+        }
+    }
+
+    const daysEl = document.getElementById('countdown-days');
+    const hoursEl = document.getElementById('countdown-hours');
+    const minutesEl = document.getElementById('countdown-minutes');
+    const secondsEl = document.getElementById('countdown-seconds');
+
+    function update() {
+        const now = new Date();
+        const diff = targetDate - now;
+
+        if (diff <= 0) {
+            clearInterval(countdownInterval);
+            window.location.reload();
+            return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+        if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+        if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+        if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+    }
+
+    update();
+    const countdownInterval = setInterval(update, 1000);
+}
+
+// -------------------------------------------------------------
+// Celebration Mode (On or After Anniversary)
+// -------------------------------------------------------------
+function setupAnniversaryCelebration() {
+    initSlideshowControls();
+    initAudioControls();
+    initSwipeControls();
+    initKeyboardControls();
+    initCouponsUI();
+
+    // Auto-open anniversary overlay on first session load
+    if (!sessionStorage.getItem('anniversaryOpened')) {
+        setTimeout(() => {
+            openAnniversaryOverlay();
+            sessionStorage.setItem('anniversaryOpened', 'true');
+        }, 1200);
+    }
+}
+
+// -------------------------------------------------------------
+// Slideshow Navigation & Controls
+// -------------------------------------------------------------
+function openAnniversaryOverlay() {
+    const overlay = document.getElementById('anniversaryOverlay');
+    if (overlay) {
+        overlay.classList.add('active');
+        overlay.style.display = 'flex';
+        showSlide(0);
+        loadStatsAndRender();
+    }
+}
+
+function closeAnniversaryOverlay() {
+    const overlay = document.getElementById('anniversaryOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+        
+        // Stop audio
+        audio.pause();
+        
+        // Clear slideshows, typewriters and auto-advance timers
+        if (photoInterval) {
+            clearInterval(photoInterval);
+            photoInterval = null;
+        }
+        if (typewriterInterval) {
+            clearInterval(typewriterInterval);
+            typewriterInterval = null;
+        }
+        if (slideTimeout) {
+            clearTimeout(slideTimeout);
+            slideTimeout = null;
+        }
+        
+        // Reset YouTube iframe to stop playback
+        const ytIframe = document.getElementById('anniversaryYoutubeVideo');
+        if (ytIframe) {
+            const src = ytIframe.src;
+            ytIframe.src = '';
+            ytIframe.src = src;
+        }
+    }
+}
+
+function showSlide(index) {
+    const slides = document.querySelectorAll('.anniversary-slide');
+    if (slides.length === 0) return;
+    
+    // Bounds check
+    let targetIndex = index;
+    if (targetIndex >= slides.length) targetIndex = 0;
+    if (targetIndex < 0) targetIndex = slides.length - 1;
+    
+    // Transition classes
+    slides.forEach((slide, idx) => {
+        slide.classList.remove('active', 'fade-in', 'fade-out', 'slide-in-right', 'slide-out-left', 'slide-in-left', 'slide-out-right');
+        if (idx === targetIndex) {
+            slide.classList.add('active', 'fade-in');
+        }
+    });
+    
+    currentSlideIndex = targetIndex;
+    
+    // Slide 1: Stats Slide count-up animation
+    if (targetIndex === 1) {
+        triggerStatsAnimation();
+    }
+    
+    // Slide 3: Start photo slideshow
+    if (targetIndex === 3) {
+        initPhotoSlideshow();
+    } else {
+        if (photoInterval) {
+            clearInterval(photoInterval);
+            photoInterval = null;
+        }
+    }
+    
+    // Stop YouTube video if user leaves the video slide (Slide index 4)
+    const ytIframe = document.getElementById('anniversaryYoutubeVideo');
+    if (ytIframe && targetIndex !== 4) {
+        const src = ytIframe.src;
+        ytIframe.src = '';
+        ytIframe.src = src;
+    }
+    
+    // Slide 5: Typewriter letter
+    if (targetIndex === 5) {
+        triggerLoveLetterTypewriter();
+    } else {
+        if (typewriterInterval) {
+            clearInterval(typewriterInterval);
+            typewriterInterval = null;
+        }
+    }
+    
+    updateProgressIndicator();
+    
+    // Toggle navigation footer and tap zones visibility on Cover (Slide 0)
+    const footerControls = document.querySelector('.story-footer-controls');
+    const prevZone = document.getElementById('storyPrevZone');
+    const nextZone = document.getElementById('storyNextZone');
+    
+    if (footerControls) {
+        footerControls.style.display = targetIndex === 0 ? 'none' : 'flex';
+    }
+    if (prevZone) {
+        prevZone.style.pointerEvents = targetIndex === 0 ? 'none' : 'auto';
+    }
+    if (nextZone) {
+        nextZone.style.pointerEvents = targetIndex === 0 ? 'none' : 'auto';
+    }
+}
+
+function updateProgressIndicator() {
+    // Clear existing auto-advance timeout
+    if (slideTimeout) {
+        clearTimeout(slideTimeout);
+        slideTimeout = null;
+    }
+
+    const chunks = document.querySelectorAll('.story-progress-chunk');
+    chunks.forEach((chunk, idx) => {
+        const fill = chunk.querySelector('.story-progress-fill');
+        if (!fill) return;
+        
+        // Reset dynamic inline transitions
+        fill.style.transition = 'none';
+        
+        if (idx < currentSlideIndex) {
+            chunk.classList.add('completed');
+            fill.style.width = '100%';
+        } else if (idx > currentSlideIndex) {
+            chunk.classList.remove('completed');
+            fill.style.width = '0%';
+        } else {
+            // Current active slide
+            chunk.classList.remove('completed');
+            fill.style.width = '0%';
+            
+            // Force browser reflow to reset width to 0% immediately
+            void fill.offsetHeight;
+            
+            // Auto-advance config: Slide 0 (Intro), 3 (Photos), 4 (Video), and 5 (Letter) do NOT auto-advance
+            const shouldAutoAdvance = currentSlideIndex !== 0 && currentSlideIndex !== 3 && currentSlideIndex !== 4 && currentSlideIndex !== 5;
+            
+            if (shouldAutoAdvance) {
+                // Animate progress width from 0% to 100% over SLIDE_DURATION
+                fill.style.transition = `width ${SLIDE_DURATION}ms linear`;
+                fill.style.width = '100%';
+                
+                // Trigger next slide after duration
+                slideTimeout = setTimeout(() => {
+                    showSlide(currentSlideIndex + 1);
+                }, SLIDE_DURATION);
+            } else {
+                // If it shouldn't auto-advance, keep progress chunk static (filled)
+                fill.style.width = '100%';
+            }
+        }
+    });
+}
+
+function initSlideshowControls() {
+    const btnNext = document.getElementById('storyNextBtn');
+    const btnPrev = document.getElementById('storyPrevBtn');
+    const btnClose = document.getElementById('storyCloseBtn');
+    const btnStart = document.getElementById('startStoryBtn');
+    const btnStoryTrigger = document.getElementById('btn-story');
+    
+    // Next/Prev Zones (Instagram style)
+    const zoneNext = document.getElementById('storyNextZone');
+    const zonePrev = document.getElementById('storyPrevZone');
+    
+    if (btnNext) btnNext.addEventListener('click', (e) => { e.stopPropagation(); showSlide(currentSlideIndex + 1); });
+    if (btnPrev) btnPrev.addEventListener('click', (e) => { e.stopPropagation(); showSlide(currentSlideIndex - 1); });
+    if (btnClose) btnClose.addEventListener('click', (e) => { e.stopPropagation(); closeAnniversaryOverlay(); });
+    
+    if (zoneNext) zoneNext.addEventListener('click', () => showSlide(currentSlideIndex + 1));
+    if (zonePrev) zonePrev.addEventListener('click', () => showSlide(currentSlideIndex - 1));
+    
+    if (btnStart) btnStart.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playTrack(0);
+        showSlide(1);
+    });
+    
+    if (btnStoryTrigger) {
+        btnStoryTrigger.addEventListener('click', openAnniversaryOverlay);
+    }
+    
+    // Bind modal open
+    const btnCuponsTrigger = document.getElementById('btn-cupons');
+    if (btnCuponsTrigger) {
+        btnCuponsTrigger.addEventListener('click', () => {
+            const modal = new bootstrap.Modal(document.getElementById('couponsModal'));
+            modal.show();
+        });
+    }
+}
+
+// -------------------------------------------------------------
+// Audio Controller (Plays sequence with local fallback)
+// -------------------------------------------------------------
+function initAudioControls() {
+    audio.addEventListener('ended', () => {
+        playNextTrack();
+    });
+    
+    audio.addEventListener('error', () => {
+        const currentTrack = tracks[currentTrackIndex];
+        // If local track fails to load, try play online fallback
+        if (audio.src.includes(currentTrack.url) && currentTrack.fallback) {
+            console.warn(`[Anniversary] Local track "${currentTrack.name}" not found. Falling back to: ${currentTrack.fallback}`);
+            audio.src = currentTrack.fallback;
+            audio.load();
+            audio.play().catch(err => console.log('[Anniversary] Fallback audio playback blocked:', err));
+        }
+    });
+}
+
+function playTrack(idx) {
+    currentTrackIndex = idx % tracks.length;
+    const currentTrack = tracks[currentTrackIndex];
+    audio.src = currentTrack.url;
+    audio.load();
+    audio.play()
+        .then(() => {
+            console.log(`[Anniversary] Tocando: ${currentTrack.name}`);
+        })
+        .catch(err => {
+            console.log('[Anniversary] Audio playback blocked by browser. Retrying fallback direct load:', err);
+            // Try fallback directly if blocked/error
+            audio.src = currentTrack.fallback;
+            audio.load();
+            audio.play().catch(e => console.log('[Anniversary] Audio play failed completely:', e));
+        });
+}
+
+function playNextTrack() {
+    playTrack(currentTrackIndex + 1);
+}
+
+// -------------------------------------------------------------
+// Swipe & Keyboard controls
+// -------------------------------------------------------------
+function initSwipeControls() {
+    const overlay = document.getElementById('anniversaryOverlay');
+    if (!overlay) return;
+    
+    overlay.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    
+    overlay.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipeGesture();
+    }, { passive: true });
+}
+
+function handleSwipeGesture() {
+    const swipeThreshold = 50;
+    if (touchStartX - touchEndX > swipeThreshold) {
+        showSlide(currentSlideIndex + 1); // Swipe Left -> Next
+    } else if (touchEndX - touchStartX > swipeThreshold) {
+        showSlide(currentSlideIndex - 1); // Swipe Right -> Prev
+    }
+}
+
+function initKeyboardControls() {
+    document.addEventListener('keydown', e => {
+        const overlay = document.getElementById('anniversaryOverlay');
+        if (overlay && overlay.classList.contains('active')) {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                showSlide(currentSlideIndex + 1);
+            } else if (e.key === 'ArrowLeft') {
+                showSlide(currentSlideIndex - 1);
+            } else if (e.key === 'Escape') {
+                closeAnniversaryOverlay();
+            }
+        }
+    });
+}
+
+// -------------------------------------------------------------
+// Stats & First Memory Loader
+// -------------------------------------------------------------
+async function loadStatsAndRender() {
+    try {
+        // 1. Fetch memories
+        const memSnapshot = await db.collection('memories').orderBy('date', 'asc').get();
+        const totalMemories = memSnapshot.size;
+
+        // Populate anniversaryPhotos for the polaroid slideshow stack
+        anniversaryPhotos = [];
+        memSnapshot.forEach(doc => {
+            const data = doc.data();
+            let imgs = [];
+            if (Array.isArray(data.images) && data.images.length > 0) {
+                imgs = data.images;
+            } else if (typeof data.image === 'string' && data.image) {
+                imgs = [data.image];
+            }
+            
+            if (imgs.length > 0) {
+                imgs.forEach(img => {
+                    anniversaryPhotos.push({
+                        src: img,
+                        title: data.title || 'Momento Especial',
+                        date: data.date
+                    });
+                });
+            }
+        });
+
+        // Start preloading the first 8 photos immediately in the background
+        for (let i = 0; i < Math.min(8, anniversaryPhotos.length); i++) {
+            preloadAnniversaryPhoto(i);
+        }
+        
+        // 2. Fetch letters count
+        const msgSnapshot = await db.collection('messages').get();
+        const totalLetters = msgSnapshot.size;
+        
+        // 3. Calculate days of relationship dynamically
+        const diffTime = Math.abs(new Date() - startDate);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        // 4. Update stats state
+        statsData.days = Math.max(365, diffDays); // Keep at least 365 or real days
+        statsData.memories = totalMemories;
+        statsData.letters = totalLetters;
+        
+        // If currently on Slide 1, animate immediately. Otherwise update static content
+        if (currentSlideIndex === 1) {
+            triggerStatsAnimation();
+        } else {
+            const daysEl = document.getElementById('stat-days');
+            const memEl = document.getElementById('stat-memories');
+            const letEl = document.getElementById('stat-letters');
+            if (daysEl) daysEl.textContent = statsData.days;
+            if (memEl) memEl.textContent = statsData.memories;
+            if (letEl) letEl.textContent = statsData.letters;
+        }
+        
+        // 5. Render first memory details in Slide 2
+        if (!memSnapshot.empty) {
+            const firstMem = memSnapshot.docs[0].data();
+            const firstImgEl = document.getElementById('firstMemoryImg');
+            const firstTitleEl = document.getElementById('firstMemoryTitle');
+            const firstDescEl = document.getElementById('firstMemoryDesc');
+            
+            if (firstImgEl) {
+                let imgUrl = 'capa.jpg';
+                if (Array.isArray(firstMem.images) && firstMem.images.length > 0) {
+                    imgUrl = firstMem.images[0];
+                } else if (typeof firstMem.image === 'string' && firstMem.image) {
+                    imgUrl = firstMem.image;
+                }
+                firstImgEl.src = imgUrl;
+            }
+            
+            if (firstTitleEl) firstTitleEl.textContent = firstMem.title || 'Nosso Começo';
+            if (firstDescEl) {
+                const dateStr = firstMem.date 
+                    ? new Date(firstMem.date + 'T00:00:00').toLocaleDateString('pt-BR') 
+                    : '';
+                firstDescEl.textContent = `Registrada por ${firstMem.autor || 'Nós'} em ${dateStr}. "${firstMem.message || ''}"`;
+            }
+        }
+    } catch (err) {
+        console.error('[Anniversary] Erro ao carregar estatísticas:', err);
+    }
+}
+
+// -------------------------------------------------------------
+// Stats Animation (Count Up Effect)
+// -------------------------------------------------------------
+function triggerStatsAnimation() {
+    const daysEl = document.getElementById('stat-days');
+    const memEl = document.getElementById('stat-memories');
+    const letEl = document.getElementById('stat-letters');
+    const loveEl = document.getElementById('stat-love');
+
+    if (daysEl) animateCount(daysEl, 0, statsData.days, 1500);
+    if (memEl) animateCount(memEl, 0, statsData.memories, 1500);
+    if (letEl) animateCount(letEl, 0, statsData.letters, 1500);
+    if (loveEl) animateCount(loveEl, 0, 100, 1500, '%');
+}
+
+function animateCount(element, start, end, duration, suffix = '') {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const value = Math.floor(progress * (end - start) + start);
+        element.textContent = value + suffix;
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        } else {
+            element.textContent = end + suffix;
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
+// -------------------------------------------------------------
+// Ken Burns Dynamic Slideshow
+// -------------------------------------------------------------
+function initPhotoSlideshow() {
+    const container = document.getElementById('polaroidStackContainer');
+    if (!container) return;
+    
+    if (anniversaryPhotos.length === 0) {
+        container.innerHTML = `<div class="d-flex justify-content-center align-items-center h-100 text-muted text-white">Nenhuma foto encontrada no Diário. 📸</div>`;
+        return;
+    }
+    
+    let currentIndex = 0;
+    let zIndexCounter = 1;
+    
+    function showNextPhoto() {
+        if (anniversaryPhotos.length === 0) return;
+        const photo = anniversaryPhotos[currentIndex];
+        
+        // Preload next 3 photos to stay ahead of the stack carousel
+        preloadAnniversaryPhoto(currentIndex + 1);
+        preloadAnniversaryPhoto(currentIndex + 2);
+        preloadAnniversaryPhoto(currentIndex + 3);
+        
+        // Create new polaroid stack card
+        const cardEl = document.createElement('div');
+        cardEl.className = 'polaroid-slideshow-frame drop-anim';
+        
+        // Generate random angle and offset positions for natural scrapbook style stacking
+        const angle = (Math.random() * 10) - 5; // -5deg to +5deg
+        const offsetX = (Math.random() * 16) - 8; // -8px to +8px
+        const offsetY = (Math.random() * 16) - 8; // -8px to +8px
+        
+        // Set styles and css custom properties for drop keyframes
+        cardEl.style.setProperty('--offsetX', `${offsetX}px`);
+        cardEl.style.setProperty('--offsetY', `${offsetY}px`);
+        cardEl.style.setProperty('--angle', `${angle}deg`);
+        cardEl.style.zIndex = zIndexCounter++;
+        
+        const dateStr = photo.date ? new Date(photo.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+        
+        cardEl.innerHTML = `
+            <div class="polaroid-image-area" style="width: 100%; height: 200px; border-radius: 2px; overflow: hidden; position: relative; background: #111;">
+                <img src="${photo.src}" class="ken-burns-img" style="width: 100%; height: 100%; object-fit: cover; animation: kenburns-zoom 6s ease-out forwards;">
+            </div>
+            <div class="polaroid-caption" style="margin-top: 10px; font-size: 0.85rem; pointer-events: none;">
+                ${photo.title}
+                <span style="color: var(--rosa-500); font-size: 0.72rem; font-family: var(--font-sans); display: block; margin-top: 2px;">${dateStr}</span>
+            </div>
+        `;
+        
+        container.appendChild(cardEl);
+        
+        // Remove oldest cards at the bottom of the stack to keep performance clean
+        const oldCards = container.querySelectorAll('.polaroid-slideshow-frame');
+        if (oldCards.length > 4) {
+            const bottomCard = oldCards[0];
+            bottomCard.style.opacity = 0;
+            bottomCard.style.transition = 'opacity 0.4s ease';
+            setTimeout(() => {
+                bottomCard.remove();
+            }, 400);
+        }
+        
+        currentIndex = (currentIndex + 1) % anniversaryPhotos.length;
+    }
+    
+    container.innerHTML = '';
+    showNextPhoto();
+    
+    if (photoInterval) clearInterval(photoInterval);
+    photoInterval = setInterval(showNextPhoto, 2000); // 2 seconds snappier interval!
+}
+
+// -------------------------------------------------------------
+// Typewriter Text Effect (Love Letter)
+// -------------------------------------------------------------
+function triggerLoveLetterTypewriter() {
+    const textEl = document.getElementById('loveLetterText');
+    if (!textEl) return;
+    
+    if (typewriterInterval) clearInterval(typewriterInterval);
+    textEl.textContent = '';
+    
+    let index = 0;
+    typewriterInterval = setInterval(() => {
+        if (index < loveLetterText.length) {
+            textEl.textContent += loveLetterText.charAt(index);
+            index++;
+            
+            // Keep container scrolled down
+            const paper = document.querySelector('.love-letter-paper');
+            if (paper) {
+                paper.scrollTop = paper.scrollHeight;
+            }
+        } else {
+            clearInterval(typewriterInterval);
+            typewriterInterval = null;
+        }
+    }, 45);
+}
+
+// -------------------------------------------------------------
+// Coupons Management
+// -------------------------------------------------------------
+function initCouponsUI() {
+    listenToCoupons();
+    initCouponRedemption();
+}
+
+function listenToCoupons() {
+    db.collection('coupons').onSnapshot(snapshot => {
+        const container = document.getElementById('couponsContainer');
+        if (!container) return;
+        
+        if (snapshot.empty) {
+            container.innerHTML = `<div class="text-center text-muted p-4">Nenhum cupom cadastrado.</div>`;
+            return;
+        }
+        
+        let html = '';
+        snapshot.forEach(doc => {
+            const coupon = doc.data();
+            const docId = doc.id;
+            
+            const isRedeemed = coupon.status === 'redeemed';
+            
+            html += `
+            <div class="coupon-card ${isRedeemed ? 'redeemed' : 'available'}">
+                <div class="coupon-main">
+                    <div class="coupon-watermark">❤️</div>
+                    <h6 class="coupon-title fw-bold mb-1" style="font-size: 0.95rem;">${coupon.name}</h6>
+                    <p class="small text-muted mb-0" style="font-size: 0.8rem; line-height: 1.4;">${coupon.description}</p>
+                    ${isRedeemed ? `<div class="coupon-stamp">Resgatado</div>` : ''}
+                </div>
+                <div class="coupon-divider"></div>
+                <div class="coupon-action">
+                    ${isRedeemed 
+                        ? `<button class="btn btn-sm btn-secondary rounded-pill px-3" disabled style="font-size: 0.78rem;">Usado</button>` 
+                        : `<button class="btn btn-sm btn-primary rounded-pill px-3 btn-redeem-coupon" data-id="${docId}" style="font-size: 0.78rem; background: linear-gradient(135deg, var(--rosa-500) 0%, var(--rosa-600) 100%); border: none;">Resgatar</button>`}
+                </div>
+            </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }, err => {
+        console.error('[Anniversary] Erro ao sincronizar cupons:', err);
+    });
+}
+
+function initCouponRedemption() {
+    const container = document.getElementById('couponsContainer');
+    if (!container) return;
+    
+    // Prevent double listener bindings
+    const newContainer = container.cloneNode(true);
+    container.parentNode.replaceChild(newContainer, container);
+    
+    newContainer.addEventListener('click', async e => {
+        if (e.target.classList.contains('btn-redeem-coupon')) {
+            const docId = e.target.getAttribute('data-id');
+            const user = getCurrentUser();
+            
+            if (!user || (user !== 'Thomas' && user !== 'Gabriela')) {
+                showToast('Identifique-se primeiro clicando no topo direito!', 'warning');
+                return;
+            }
+            
+            if (!confirm('Deseja mesmo resgatar este cupom de amor? Seu parceiro receberá uma notificação na hora!')) {
+                return;
+            }
+            
+            try {
+                const docRef = db.collection('coupons').doc(docId);
+                const docSnap = await docRef.get();
+                if (!docSnap.exists) {
+                    showToast('Cupom não encontrado!', 'danger');
+                    return;
+                }
+                
+                const couponData = docSnap.data();
+                if (couponData.status === 'redeemed') {
+                    showToast('Este cupom já foi usado!', 'warning');
+                    return;
+                }
+                
+                await docRef.update({
+                    status: 'redeemed',
+                    redeemedBy: user,
+                    redeemedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showToast(`Cupom "${couponData.name}" resgatado! 🎉`, 'success');
+                
+                // Trigger push notification to partner
+                fetch('/api/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: '🎟️ Cupom de Amor Resgatado!',
+                        body: `${user} resgatou o cupom: ${couponData.name}`,
+                        authorName: user
+                    })
+                })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                    }
+                    return res.json();
+                })
+                .then(data => console.log('[Anniversary] Notificação de resgate enviada:', data))
+                .catch(err => console.warn('[Anniversary] Alerta de notificação (esperado em dev local):', err.message));
+                
+            } catch (err) {
+                console.error('[Anniversary] Erro ao resgatar cupom:', err);
+                showToast('Erro ao resgatar cupom.', 'danger');
+            }
+        }
+    });
+}

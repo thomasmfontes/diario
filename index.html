@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="css/letter-list.css">
     <link rel="stylesheet" href="css/letter.css">
     <link rel="stylesheet" href="css/ai.css">
+    <link rel="stylesheet" href="css/anniversary.css">
     <link rel="stylesheet" href="css/style.css">
 
     <!-- Meta OG -->
@@ -69,6 +70,14 @@
                 Nossos momentos inesquecíveis
                 <span id="easterEggTrigger" class="pointer">❤️</span>
             </p>
+            <div class="d-flex justify-content-center gap-2 mb-3">
+                <button id="btn-story" class="btn btn-sm btn-anniversary rounded-pill px-3 py-1 animate-pulse" title="Ver nossa retrospectiva de 1 ano">
+                    <i class="bi bi-stars"></i> 1 Ano Juntos
+                </button>
+                <button id="btn-cupons" class="btn btn-sm btn-anniversary rounded-pill px-3 py-1" title="Ver cupons de amor">
+                    <i class="bi bi-ticket-perforated"></i> Cupons de Amor
+                </button>
+            </div>
             <p class="tg">T & G</p>
         </header>
 
@@ -299,6 +308,193 @@
         <footer class="mt-5 text-center text-muted small">
             <p>Nosso Diário © 2025 - Criado com ❤️</p>
         </footer>
+    </div>
+
+    <!-- 1-Year Anniversary Overlay -->
+    <div id="anniversaryOverlay" class="position-fixed w-100 h-100 top-0 start-0">
+        <!-- Floating hearts background -->
+        <div class="floating-hearts-container" id="anniversaryHearts">
+            <span class="floating-heart heart-speed-2 heart-delay-1 heart-size-sm" style="left: 10%;">❤️</span>
+            <span class="floating-heart heart-speed-1 heart-delay-3 heart-size-md" style="left: 25%;">💖</span>
+            <span class="floating-heart heart-speed-3 heart-delay-2 heart-size-lg" style="left: 45%;">❤️</span>
+            <span class="floating-heart heart-speed-2 heart-delay-4 heart-size-sm" style="left: 65%;">💕</span>
+            <span class="floating-heart heart-speed-4 heart-delay-3 heart-size-md" style="left: 80%;">❤️</span>
+        </div>
+
+        <!-- Touch/Click navigation zones (Instagram style) -->
+        <div class="story-nav-zone prev" id="storyPrevZone"></div>
+        <div class="story-nav-zone next" id="storyNextZone"></div>
+
+        <!-- Close button -->
+        <button class="anniversary-close-btn" id="storyCloseBtn" aria-label="Fechar retrospectiva">
+            <i class="bi bi-x-lg"></i>
+        </button>
+
+        <div class="anniversary-card">
+            <!-- Instagram-style progress bars at the top of the card -->
+            <div class="story-progress-bar" id="storyProgress">
+                <div class="story-progress-chunk" id="chunk-0"><div class="story-progress-fill"></div></div>
+                <div class="story-progress-chunk" id="chunk-1"><div class="story-progress-fill"></div></div>
+                <div class="story-progress-chunk" id="chunk-2"><div class="story-progress-fill"></div></div>
+                <div class="story-progress-chunk" id="chunk-3"><div class="story-progress-fill"></div></div>
+                <div class="story-progress-chunk" id="chunk-4"><div class="story-progress-fill"></div></div>
+                <div class="story-progress-chunk" id="chunk-5"><div class="story-progress-fill"></div></div>
+            </div>
+
+            <!-- Slides wrapper -->
+            <div class="anniversary-slides-container">
+                <!-- Slide 1: Music & intro clicker -->
+                <div class="anniversary-slide active" id="slide-0">
+                    <h2 class="title-font text-primary mb-3">Nossa História</h2>
+                    <h3 class="h5 fw-bold text-secondary mb-4">1 Ano de Momentos Inesquecíveis</h3>
+                    <p class="text-muted mb-4 px-3">
+                        Aperte o coração abaixo para começar nossa jornada musical e recordar tudo que vivemos juntos...
+                    </p>
+                    <button class="intro-pulse-btn" id="startStoryBtn" aria-label="Iniciar música e retrospectiva">
+                        <svg viewBox="0 0 32 29.6" width="72" height="72" style="display: block;">
+                            <defs>
+                                <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#ff5e97" />
+                                    <stop offset="100%" stop-color="#e75480" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z" fill="url(#heartGradient)"/>
+                        </svg>
+                    </button>
+                    <span class="small text-muted mt-3"><i class="bi bi-volume-up"></i> Aumente o som</span>
+                    <!-- Hidden audio element for background music -->
+                    <audio id="anniversaryMusic" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio> 
+                </div>
+
+                <!-- Slide 2: Stats display -->
+                <div class="anniversary-slide" id="slide-1">
+                    <h3 class="h4 fw-bold text-primary mb-3">Nossos Números</h3>
+                    <p class="text-muted mb-3">Tudo o que construímos juntos no último ano...</p>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-days">365</span>
+                            <span class="stat-label">Dias</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-memories">0</span>
+                            <span class="stat-label">Memórias</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-letters">0</span>
+                            <span class="stat-label">Cartinhas</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-love">100%</span>
+                            <span class="stat-label">Amor</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3: First memory show -->
+                <div class="anniversary-slide" id="slide-2">
+                    <h3 class="h4 fw-bold text-primary mb-2">Onde tudo começou</h3>
+                    <p class="text-muted small mb-3">Nossa primeiríssima lembrança guardada...</p>
+                    
+                    <div class="polaroid-frame" id="firstMemoryFrame">
+                        <img src="capa.jpg" class="polaroid-img" id="firstMemoryImg" alt="Nossa primeira foto">
+                        <div class="polaroid-caption" id="firstMemoryTitle">Nosso Primeiro Dia</div>
+                    </div>
+                    <p class="text-muted small px-3 mt-2" id="firstMemoryDesc">
+                        A primeira de muitas aventuras!
+                    </p>
+                </div>
+
+                <!-- Slide 4: Dynamic slideshow container for photos -->
+                <div class="anniversary-slide" id="slide-3">
+                    <h3 class="h4 fw-bold text-primary mb-3">Nossos Momentos</h3>
+                    <div class="w-100 px-2 d-flex justify-content-center">
+                        <div id="polaroidStackContainer" style="width: 100%; max-width: 290px; height: 330px; position: relative;"></div>
+                    </div>
+                    <p class="text-muted small mt-3 px-3">
+                        Alguns dos sorrisos mais bonitos que compartilhamos.
+                    </p>
+                </div>
+
+                <!-- Slide 5: YouTube iframe placeholder -->
+                <div class="anniversary-slide" id="slide-4">
+                    <h3 class="h4 fw-bold text-primary mb-3">Nossa Trilha Sonora</h3>
+                    <p class="text-muted small mb-3">Uma música que diz tudo sobre nós dois...</p>
+                    
+                    <div class="video-wrapper">
+                        <iframe id="anniversaryYoutubeVideo" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <!-- Slide 6: Love Letter display area -->
+                <div class="anniversary-slide" id="slide-5">
+                    <h3 class="h4 fw-bold text-primary mb-3">Uma Carta Para Você</h3>
+                    
+                    <div class="love-letter-paper">
+                        <div class="love-letter-text" id="loveLetterContent">
+                            <span class="typewriter-text" id="loveLetterText">Querida Gabi, hoje celebramos 1 ano de muitas risadas, cumplicidade e sonhos construídos lado a lado. Cada dia com você é um presente, e mal posso esperar pelo que o futuro nos reserva. Amo você! ❤️</span>
+                            <span class="typewriter-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Controls -->
+            <div class="story-footer-controls">
+                <button class="story-control-btn" id="storyPrevBtn"><i class="bi bi-chevron-left"></i> Voltar</button>
+                <button class="story-control-btn" id="storyNextBtn">Avançar <i class="bi bi-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cupons de Amor -->
+    <div class="modal fade" id="couponsModal" tabindex="-1" aria-labelledby="couponsTitle">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-md">
+            <div class="modal-content rounded-4 border-0 shadow-lg" style="background-color: #fff0f3;">
+                <div class="modal-header border-0 bg-transparent position-relative pb-0">
+                    <h5 id="couponsTitle" class="modal-title w-100 text-center fw-bold text-primary">🎟️ Cupons de Amor</h5>
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body p-4" id="couponsContainer">
+                    <div class="coupon-card available">
+                        <div class="coupon-main">
+                            <div class="coupon-watermark">❤️</div>
+                            <h6 class="coupon-title fw-bold mb-1">Vale um Abraço Apertado</h6>
+                            <p class="small text-muted mb-0">Use quando precisar de um chamego quentinho.</p>
+                        </div>
+                        <div class="coupon-divider"></div>
+                        <div class="coupon-action">
+                            <button class="btn btn-sm btn-primary rounded-pill px-3 btn-redeem-coupon" data-coupon-id="abraco">Resgatar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="coupon-card available">
+                        <div class="coupon-main">
+                            <div class="coupon-watermark">❤️</div>
+                            <h6 class="coupon-title fw-bold mb-1">Vale uma Janta Especial</h6>
+                            <p class="small text-muted mb-0">Com direito a cozinheiro particular e sobremesa.</p>
+                        </div>
+                        <div class="coupon-divider"></div>
+                        <div class="coupon-action">
+                            <button class="btn btn-sm btn-primary rounded-pill px-3 btn-redeem-coupon" data-coupon-id="jantar">Resgatar</button>
+                        </div>
+                    </div>
+
+                    <div class="coupon-card redeemed">
+                        <div class="coupon-main">
+                            <div class="coupon-watermark">❤️</div>
+                            <h6 class="coupon-title fw-bold mb-1">Vale uma Massagem de 30min</h6>
+                            <p class="small text-muted mb-0">Para relaxar depois de um longo dia.</p>
+                            <div class="coupon-stamp">Resgatado</div>
+                        </div>
+                        <div class="coupon-divider"></div>
+                        <div class="coupon-action">
+                            <button class="btn btn-sm btn-secondary rounded-pill px-3" disabled>Usado</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

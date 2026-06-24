@@ -4,6 +4,7 @@ import { initMessages, checkForMessage } from './modules/messages.js';
 import { initSpellCheck } from './modules/spellcheck.js';
 import { initPendingSwipers, showToast } from './modules/ui.js';
 import { initNotifications, removeNotifications } from './modules/notifications.js';
+import { initAnniversary } from './modules/anniversary.js';
 
 let swRegistration = null;
 
@@ -97,4 +98,5 @@ function init() {
     if (swRegistration) {
         initNotifications(swRegistration);
     }
+    initAnniversary();
 }

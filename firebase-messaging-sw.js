@@ -56,7 +56,7 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-const CACHE_NAME = 'diario-v1';
+const CACHE_NAME = 'diario-v2';
 const ASSETS = [
     './',
     './index.html',
@@ -70,6 +70,7 @@ const ASSETS = [
     './css/letter-list.css',
     './css/letter.css',
     './css/ai.css',
+    './css/anniversary.css',
     './js/main.js',
     './js/modules/config.js',
     './js/modules/utils.js',
@@ -78,6 +79,7 @@ const ASSETS = [
     './js/modules/spellcheck.js',
     './js/modules/memories.js',
     './js/modules/messages.js',
+    './js/modules/anniversary.js',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css',
     'https://fonts.googleapis.com/css2?family=Pacifico&display=swap',
@@ -98,7 +100,18 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-    event.waitUntil(clients.claim());
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cache => {
+                    if (cache !== CACHE_NAME) {
+                        console.log('[Service Worker] Deletando cache antigo:', cache);
+                        return caches.delete(cache);
+                    }
+                })
+            );
+        }).then(() => clients.claim())
+    );
 });
 
 self.addEventListener('fetch', event => {

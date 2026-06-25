@@ -31,6 +31,7 @@ const SLIDE_DURATION = 8000; // 8 segundos por slide
 let statsData = { days: 365, memories: 0, letters: 0 };
 let anniversaryPhotos = [];
 const preloadedImages = {};
+let countdownInterval = null;
 
 function preloadAnniversaryPhoto(index) {
     if (anniversaryPhotos.length === 0) return;
@@ -53,37 +54,89 @@ Este é apenas o primeiro ano de muitos que ainda vamos construir juntos. Mal po
 
 Eu amo você, hoje, amanhã e para sempre! TIII AMUUUUU INFIDOIIIXXX ❤️`;
 
-// Check if anniversary has arrived (can override with ?testAnniversary=true)
-function isAnniversaryPassed() {
+// Check if anniversary has been unlocked (via query params or localStorage)
+export function isAnniversaryUnlocked() {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('testAnniversary') === 'true') {
-        return true;
+    const testAnniversary = urlParams.get('testAnniversary') === 'true';
+    const unlockAnniversary = urlParams.get('unlockAnniversary') === 'true';
+    
+    if (testAnniversary || unlockAnniversary) {
+        localStorage.setItem('anniversaryUnlocked', 'true');
     }
+    
+    return localStorage.getItem('anniversaryUnlocked') === 'true';
+}
+
+// Check if target date (2026-07-01) has been reached
+export function isTargetDateReached() {
     return new Date() >= targetDate;
+}
+
+// Render the waiting card in the DOM
+export function setupWaitingCard() {
+    if (!document.getElementById('anniversaryWaiting')) {
+        const memoriesSection = document.getElementById('memoriesSection');
+        if (memoriesSection) {
+            const waitingHtml = `
+            <div id="anniversaryWaiting" class="waiting-card mb-4">
+                <div class="waiting-icon-container">
+                    <i class="bi bi-envelope-heart"></i>
+                </div>
+                <div class="waiting-badge">Bloqueado</div>
+                <h4 class="waiting-title">O nosso dia especial chegou! ❤️</h4>
+                <p class="waiting-text">
+                    Aguarde a minha chegada, pois tenho algo muito especial para te entregar... ✉️
+                </p>
+            </div>
+            `;
+            memoriesSection.insertAdjacentHTML('beforebegin', waitingHtml);
+        }
+    }
 }
 
 export function initAnniversary() {
     // 1. Initialize Coupons database collection
     initCouponsDB();
 
-    // 2. Setup anniversary access
-    const isSpecialDay = isAnniversaryPassed();
+    // 2. Setup anniversary access states
+    const unlocked = isAnniversaryUnlocked();
+    const isSpecialDay = isTargetDateReached();
 
-    if (!isSpecialDay) {
-        setupCountdown();
-        // Hide anniversary action buttons if before target date
-        const btnStory = document.getElementById('btn-story');
-        const btnCupons = document.getElementById('btn-cupons');
-        if (btnStory) btnStory.style.display = 'none';
-        if (btnCupons) btnCupons.style.display = 'none';
-    } else {
+    const btnStory = document.getElementById('btn-story');
+    const btnCupons = document.getElementById('btn-cupons');
+
+    if (unlocked) {
         // Show anniversary action buttons
-        const btnStory = document.getElementById('btn-story');
-        const btnCupons = document.getElementById('btn-cupons');
         if (btnStory) btnStory.style.display = 'inline-block';
         if (btnCupons) btnCupons.style.display = 'inline-block';
-        
+
+        // Remove locked cards if they exist
+        const cd = document.getElementById('anniversaryCountdown');
+        if (cd) cd.remove();
+        const wt = document.getElementById('anniversaryWaiting');
+        if (wt) wt.remove();
+
         setupAnniversaryCelebration();
+    } else {
+        // Hide anniversary action buttons
+        if (btnStory) btnStory.style.display = 'none';
+        if (btnCupons) btnCupons.style.display = 'none';
+
+        if (!isSpecialDay) {
+            // Countdown Mode
+            const wt = document.getElementById('anniversaryWaiting');
+            if (wt) wt.remove();
+            setupCountdown();
+        } else {
+            // Waiting Card Mode
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            const cd = document.getElementById('anniversaryCountdown');
+            if (cd) cd.remove();
+            setupWaitingCard();
+        }
     }
 }
 
@@ -121,6 +174,8 @@ function initCouponsDB() {
 // Countdown Mode (Before Anniversary)
 // -------------------------------------------------------------
 function setupCountdown() {
+    if (countdownInterval) clearInterval(countdownInterval);
+
     if (!document.getElementById('anniversaryCountdown')) {
         const memoriesSection = document.getElementById('memoriesSection');
         if (memoriesSection) {
@@ -162,7 +217,8 @@ function setupCountdown() {
 
         if (diff <= 0) {
             clearInterval(countdownInterval);
-            window.location.reload();
+            countdownInterval = null;
+            initAnniversary();
             return;
         }
 
@@ -178,7 +234,7 @@ function setupCountdown() {
     }
 
     update();
-    const countdownInterval = setInterval(update, 1000);
+    countdownInterval = setInterval(update, 1000);
 }
 
 // -------------------------------------------------------------
@@ -495,10 +551,38 @@ async function loadStatsAndRender() {
         const memSnapshot = await db.collection('memories').orderBy('date', 'asc').get();
         const totalMemories = memSnapshot.size;
 
+        let thomasCount = 0;
+        let gabiCount = 0;
+        const monthCounts = {};
+        const monthNames = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+
         // Populate anniversaryPhotos for the polaroid slideshow stack
         anniversaryPhotos = [];
         memSnapshot.forEach(doc => {
             const data = doc.data();
+
+            // Extract statistics
+            const autor = (data.autor || '').trim();
+            if (autor.toLowerCase() === 'thomas') {
+                thomasCount++;
+            } else if (autor.toLowerCase() === 'gabriela') {
+                gabiCount++;
+            }
+
+            if (data.date) {
+                const parts = data.date.split('-');
+                if (parts.length >= 2) {
+                    const monthIdx = parseInt(parts[1], 10) - 1;
+                    if (monthIdx >= 0 && monthIdx < 12) {
+                        const mName = monthNames[monthIdx];
+                        monthCounts[mName] = (monthCounts[mName] || 0) + 1;
+                    }
+                }
+            }
+
             let imgs = [];
             if (Array.isArray(data.images) && data.images.length > 0) {
                 imgs = data.images;
@@ -516,6 +600,24 @@ async function loadStatsAndRender() {
                 });
             }
         });
+
+        // Find busiest month
+        let busiestMonth = 'Nenhum';
+        let maxMonthCount = 0;
+        for (const [month, count] of Object.entries(monthCounts)) {
+            if (count > maxMonthCount) {
+                maxMonthCount = count;
+                busiestMonth = month;
+            }
+        }
+        
+        console.log(`[Anniversary] Estatísticas calculadas: total de memórias = ${totalMemories}, Thomas = ${thomasCount}, Gabriela = ${gabiCount}, mês mais movimentado = ${busiestMonth} (${maxMonthCount} memórias)`);
+
+        // Update stats description with contributions and busiest month
+        const statsDescEl = document.querySelector('#slide-1 p.text-muted');
+        if (statsDescEl) {
+            statsDescEl.innerHTML = `Tudo o que construímos juntos no último ano...<br><span class="small text-pink" style="font-size: 0.8rem; color: var(--rosa-500); font-weight: 600;">Thomas: ${thomasCount} | Gabi: ${gabiCount}<br>Mês mais ativo: ${busiestMonth} (${maxMonthCount} lembranças)</span>`;
+        }
 
         // Start preloading the first 8 photos immediately in the background
         for (let i = 0; i < Math.min(8, anniversaryPhotos.length); i++) {

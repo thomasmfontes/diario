@@ -56,7 +56,7 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-const CACHE_NAME = 'diario-v3';
+const CACHE_NAME = 'diario-v4';
 const ASSETS = [
     './',
     './index.html',
@@ -94,8 +94,24 @@ const ASSETS = [
 self.addEventListener('install', event => {
     self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(ASSETS))
+        caches.open(CACHE_NAME).then(cache => {
+            const cachePromises = ASSETS.map(url => {
+                const isLocal = !url.startsWith('http://') && !url.startsWith('https://');
+                if (isLocal) {
+                    const request = new Request(url, { cache: 'reload' });
+                    return fetch(request).then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch local asset: ${url} (Status: ${response.status})`);
+                        }
+                        return cache.put(url, response);
+                    });
+                } else {
+                    // External CDN URLs cached directly
+                    return cache.add(url);
+                }
+            });
+            return Promise.all(cachePromises);
+        })
     );
 });
 

@@ -1,10 +1,10 @@
 import { getCurrentUser, initUserSystem, updateUserUI } from './modules/user.js';
 import { initMemories, loadMemories } from './modules/memories.js';
-import { initMessages, checkForMessage } from './modules/messages.js?v=34';
+import { initMessages, checkForMessage } from './modules/messages.js?v=44';
 import { initSpellCheck } from './modules/spellcheck.js';
 import { initPendingSwipers, showToast } from './modules/ui.js';
 import { initNotifications, removeNotifications } from './modules/notifications.js';
-import { initAnniversary } from './modules/anniversary.js?v=43';
+import { initAnniversary } from './modules/anniversary.js?v=44';
 
 let swRegistration = null;
 
@@ -21,6 +21,15 @@ window.addEventListener('load', () => {
 
     // Register Service Worker
     if ('serviceWorker' in navigator) {
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                refreshing = true;
+                console.log('[PWA] Novo Service Worker ativo. Atualizando página...');
+                window.location.reload();
+            }
+        });
+
         navigator.serviceWorker.register('./firebase-messaging-sw.js')
             .then(reg => {
                 console.log('Service Worker registrado!', reg);

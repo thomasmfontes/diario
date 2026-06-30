@@ -56,7 +56,7 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-const CACHE_NAME = 'diario-v4';
+const CACHE_NAME = 'diario-v5';
 const ASSETS = [
     './',
     './index.html',
@@ -144,11 +144,20 @@ self.addEventListener('fetch', event => {
     }
 
     event.respondWith(
-        caches.match(event.request).then(response => {
-            return response || fetch(event.request).catch(() => {
-                // Se falhar o fetch e não tiver no cache, apenas retorna falha
-                return null;
-            });
-        })
+        fetch(event.request)
+            .then(response => {
+                // If we get a valid response, clone it and update the cache
+                if (response && response.status === 200) {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
+                }
+                return response;
+            })
+            .catch(() => {
+                // Fallback to cache if network fails (offline mode)
+                return caches.match(event.request);
+            })
     );
 });

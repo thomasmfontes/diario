@@ -575,7 +575,7 @@ function showSlide(index) {
     const desktopPrev = document.getElementById('desktopPrevBtn');
     
     if (footerControls) {
-        footerControls.style.display = targetIndex === 0 ? 'none' : 'flex';
+        footerControls.style.display = 'none';
     }
     if (prevZone) {
         prevZone.style.pointerEvents = targetIndex === 0 ? 'none' : 'auto';
@@ -896,7 +896,7 @@ function handlePressEnd(e) {
     const deltaX = touchStartX ? Math.abs(xCoord - touchStartX) : 0;
     
     if (currentSlideIndex === 0) return; // Prevent card tap navigation on Cover Slide (Slide 0)
-    if (currentSlideIndex === 4) return; // Video slide: no tap navigation, user controls video manually
+    if (currentSlideIndex === 4 && e.target.closest('.video-wrapper')) return; // Video wrapper tap: reserved for video controls
     if (e.type === 'touchend' && pressDuration < 200 && deltaX < 15) {
         const screenWidth = window.innerWidth;
         // Left 33% goes back, right 67% goes forward
@@ -920,7 +920,7 @@ function initSwipeControls() {
     
     card.addEventListener('touchend', e => {
         touchEndX = e.changedTouches[0].screenX;
-        handleSwipeGesture();
+        handleSwipeGesture(e);
         handlePressEnd(e);
     }, { passive: true });
 
@@ -962,9 +962,9 @@ function initSwipeControls() {
     });
 }
 
-function handleSwipeGesture() {
+function handleSwipeGesture(e) {
     if (currentSlideIndex === 0) return; // Prevent swipe gestures on Cover Slide (Slide 0)
-    if (currentSlideIndex === 4) return; // Video slide: no swipe navigation
+    if (currentSlideIndex === 4 && e && e.target && e.target.closest('.video-wrapper')) return; // Video wrapper swipe: reserved for video scrubbing
     const swipeThreshold = 50;
     if (touchStartX - touchEndX > swipeThreshold) {
         showSlide(currentSlideIndex + 1); // Swipe Left -> Next

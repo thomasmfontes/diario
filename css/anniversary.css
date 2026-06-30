@@ -69,7 +69,7 @@
     }
 
     .story-footer-controls {
-        display: none !important; /* Hide navigation buttons on mobile */
+        padding: 10px 16px;
     }
 
     .story-nav-zone {
@@ -253,7 +253,15 @@
 
 /* ---------- Story Footer Controls ---------- */
 .story-footer-controls {
-    display: none !important; /* Hide navigation buttons globally for a clean Instagram Story feel */
+    display: none; /* Hidden by default, toggled via JS on Slide 4 */
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    z-index: 2010;
 }
 
 .story-control-btn {

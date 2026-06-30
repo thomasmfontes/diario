@@ -4,7 +4,7 @@ import { initMessages, checkForMessage } from './modules/messages.js?v=34';
 import { initSpellCheck } from './modules/spellcheck.js';
 import { initPendingSwipers, showToast } from './modules/ui.js';
 import { initNotifications, removeNotifications } from './modules/notifications.js';
-import { initAnniversary } from './modules/anniversary.js?v=42';
+import { initAnniversary } from './modules/anniversary.js?v=43';
 
 let swRegistration = null;
 

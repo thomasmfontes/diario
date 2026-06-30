@@ -3,7 +3,7 @@ import { getCurrentUser } from './user.js';
 import { showToast } from './ui.js';
 
 // Target date: 1st of July 2026
-const targetDate = new Date('2026-06-01T00:00:00');
+const targetDate = new Date('2026-07-01T00:00:00');
 
 // Dating start date: 1st of July 2025
 const startDate = new Date('2025-07-01T00:00:00');

@@ -31,11 +31,11 @@
 /* Glassmorphic Card Container */
 .anniversary-card {
     position: relative;
-    width: 90%;
-    max-width: 480px;
-    height: 80vh;
-    max-height: 720px;
-    background: var(--glass-bg);
+    width: 95%;
+    max-width: 520px;
+    height: 85vh;
+    max-height: 760px;
+    background: rgba(255, 255, 255, 0.45);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-2xl);
@@ -55,6 +55,112 @@
         max-height: 100%;
         border-radius: 0;
         border: none;
+    }
+
+    .story-progress-bar {
+        padding: 8px 60px 8px 15px; /* Leave space for X on the right */
+    }
+
+    .anniversary-close-btn {
+        top: 10px !important;
+        right: 15px !important;
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .story-footer-controls {
+        display: none !important; /* Hide navigation buttons on mobile */
+    }
+
+    .story-nav-zone {
+        top: 30px !important;
+        bottom: 0px !important; /* Make tap zones go all the way down */
+    }
+
+    .anniversary-slide {
+        padding: 30px 16px 20px 16px; /* Reduced bottom padding since footer is gone */
+    }
+
+    .anniversary-slide h3 {
+        font-size: 1.15rem !important;
+        margin-bottom: 4px !important;
+    }
+
+    .anniversary-slide p.text-muted {
+        font-size: 0.75rem !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Stats Grid adjustments */
+    .stats-grid {
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .stat-item {
+        padding: 8px;
+    }
+
+    .stat-number {
+        font-size: 1.6rem;
+    }
+
+    /* Polaroid adjustments for Slide 2 (First memory) */
+    .polaroid-frame {
+        width: fit-content;
+        max-width: 90%;
+        margin: 8px auto;
+        padding: 6px 6px 12px 6px;
+    }
+
+    .polaroid-img {
+        height: 220px; /* Increased height for mobile single Polaroid */
+        width: auto;
+        max-width: 100%;
+    }
+
+    .polaroid-caption {
+        font-size: 0.8rem !important;
+        margin-top: 4px !important;
+    }
+
+    #firstMemoryDesc {
+        margin-top: 4px !important;
+        font-size: 0.72rem !important;
+        line-height: 1.35 !important;
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+    }
+
+    /* Slide 3 Stack adjustments */
+    #polaroidStackContainer {
+        height: 320px !important; /* Increased height for mobile stacking container */
+        max-width: 290px !important; /* Increased width */
+        margin-top: 22px !important;
+    }
+
+    .polaroid-slideshow-frame {
+        width: 260px !important; /* Increased width from 230px */
+        left: calc(50% - 130px) !important; /* Center dynamic offset (260/2) */
+        padding: 10px 10px 32px 10px !important; /* Increased bottom padding */
+    }
+
+    .polaroid-slideshow-frame .polaroid-image-area {
+        height: 195px !important; /* Increased height from 165px */
+    }
+
+    /* Slide 4 Video wrapper */
+    .video-wrapper {
+        height: 380px !important; /* Larger video player on mobile */
+        max-height: 46vh !important; /* Cap it on small mobile devices to prevent layout overflow */
+        width: fit-content !important;
+        max-width: 90% !important;
+    }
+
+    /* Slide 5 Love letter paper */
+    .love-letter-paper {
+        max-height: 220px;
+        padding: 12px 12px 12px 18px;
     }
 }
 
@@ -85,6 +191,15 @@
     box-shadow: var(--shadow-md);
 }
 
+.anniversary-close-btn i {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    line-height: 0;
+}
+
 /* ---------- Invisible Instagram-style Navigation Zones ---------- */
 .story-nav-zone {
     position: absolute;
@@ -109,7 +224,7 @@
     display: flex;
     gap: 6px;
     width: 100%;
-    padding: 15px 20px;
+    padding: 15px 60px 15px 20px; /* Leave space for Close button on the right */
     position: absolute;
     top: 0;
     left: 0;
@@ -138,16 +253,7 @@
 
 /* ---------- Story Footer Controls ---------- */
 .story-footer-controls {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 2010;
-    background: linear-gradient(to top, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 100%);
+    display: none !important; /* Hide navigation buttons globally for a clean Instagram Story feel */
 }
 
 .story-control-btn {
@@ -184,16 +290,17 @@
     left: 0;
     width: 100%;
     height: 100%;
-    padding: 50px 24px 80px 24px;
+    padding: 35px 24px 30px 24px; /* Reduced vertical padding globally since footer is gone */
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: center; /* Center content vertically */
     align-items: center;
     text-align: center;
     opacity: 0;
     pointer-events: none;
     visibility: hidden;
     transition: opacity 0.5s ease, transform 0.5s ease;
+    overflow: hidden; /* No internal scroll for slides */
 }
 
 .anniversary-slide.active {
@@ -324,13 +431,17 @@
 /* ---------- Slide 3 (First Memory) Polaroid Styling ---------- */
 .polaroid-frame {
     background: white;
-    padding: 12px 12px 24px 12px;
+    padding: 10px 10px 20px 10px;
     box-shadow: var(--shadow-lg), 0 0 20px rgba(0, 0, 0, 0.02);
     border-radius: 4px;
     transform: rotate(-2deg);
-    max-width: 280px;
-    margin: 15px auto;
+    width: fit-content;
+    max-width: 90%;
+    margin: 10px auto;
     transition: transform 0.3s ease;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .polaroid-frame:hover {
@@ -338,9 +449,10 @@
 }
 
 .polaroid-img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
+    height: 310px; /* Increased from 270px for larger desktop display */
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
     border-radius: 2px;
 }
 
@@ -358,10 +470,10 @@
     padding: 12px 12px 38px 12px;
     border-radius: 4px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12), 0 3px 10px rgba(0, 0, 0, 0.05);
-    width: 270px;
+    width: 310px; /* Increased from 270px for larger desktop stack */
     position: absolute;
     top: 10px;
-    left: calc(50% - 135px); /* Center inside parent container */
+    left: calc(50% - 155px); /* Center inside parent container (310/2) */
     transform-origin: center center;
     transition: transform var(--transition-base);
 }
@@ -413,23 +525,103 @@
 /* ---------- Slide 5 (YouTube Iframe) Component Specifics ---------- */
 .video-wrapper {
     position: relative;
-    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-    height: 0;
-    width: 100%;
-    max-width: 360px;
-    border-radius: var(--radius-lg);
+    width: fit-content;
+    height: 440px; /* Intrinsic video height on desktop */
+    max-height: 55vh;
+    margin: 0 auto;
+    border-radius: var(--radius-xl); /* Rounded corners matching premium cards */
     overflow: hidden;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--glass-border);
+    /* Soft glowing border + double outline in romantic pink */
+    box-shadow: 
+        0 10px 25px rgba(0, 0, 0, 0.12), 
+        0 0 0 4px rgba(231, 84, 128, 0.18), /* Outer soft pink ring */
+        0 0 15px rgba(231, 84, 128, 0.25);  /* Romantic pink glow */
+    border: 2px solid rgba(231, 84, 128, 0.55); /* Main pink border */
+    display: inline-flex;
+    background: #000;
+    transition: all var(--transition-base);
 }
 
-.video-wrapper iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+.video-wrapper:hover {
+    transform: scale(1.02);
+    box-shadow: 
+        0 15px 35px rgba(0, 0, 0, 0.18), 
+        0 0 0 5px rgba(231, 84, 128, 0.28), 
+        0 0 25px rgba(231, 84, 128, 0.4);
+    border-color: rgba(231, 84, 128, 0.8);
+}
+
+.video-wrapper video {
     height: 100%;
-    border: 0;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* ---------- Video Play Overlay ---------- */
+.video-play-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(3px);
+    z-index: 10;
+    transition: opacity 0.35s ease;
+    pointer-events: auto;
+}
+
+.video-play-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.video-play-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: rgba(231, 84, 128, 0.28);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.24),
+        0 0 0 0 rgba(231, 84, 128, 0.55);
+    animation: pulse-play 2s ease-in-out infinite;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.video-play-btn:hover {
+    background: rgba(231, 84, 128, 0.6);
+    transform: scale(1.08);
+    border-color: #ffffff;
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.35),
+        0 0 15px rgba(231, 84, 128, 0.4);
+}
+
+.video-play-label {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: 0.06em;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+}
+
+@keyframes pulse-play {
+    0%   { box-shadow: 0 0 0 0 rgba(231, 84, 128, 0.6), inset 0 1px 1px rgba(255,255,255,0.2); }
+    70%  { box-shadow: 0 0 0 22px rgba(231, 84, 128, 0), inset 0 1px 1px rgba(255,255,255,0.2); }
+    100% { box-shadow: 0 0 0 0 rgba(231, 84, 128, 0), inset 0 1px 1px rgba(255,255,255,0.2); }
 }
 
 /* ---------- Slide 6 (Love Letter / Typewriter) ---------- */
@@ -445,15 +637,38 @@
     overflow-y: auto;
     text-align: left;
     position: relative;
+    /* Custom Scrollbar for Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--rosa-200) transparent;
+}
+
+/* Custom Scrollbar for Chrome, Edge, and Safari */
+.love-letter-paper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.love-letter-paper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.love-letter-paper::-webkit-scrollbar-thumb {
+    background-color: var(--rosa-200);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.love-letter-paper::-webkit-scrollbar-thumb:hover {
+    background-color: var(--rosa-300);
 }
 
 /* Notebook line simulation decoration */
-.love-letter-paper::before {
+.love-letter-text::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 20px;
-    bottom: 0;
+    top: -25px;
+    left: -5px;
+    bottom: -25px;
     width: 1px;
     background: rgba(231, 84, 128, 0.2);
 }
@@ -464,6 +679,7 @@
     font-size: var(--text-sm);
     line-height: 1.8;
     padding-left: 10px;
+    position: relative;
 }
 
 /* Typewriter cursor blinking */
@@ -486,6 +702,22 @@
 @keyframes blinkCursor {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
+}
+
+/* ---------- Slide 7 Celebration Heart Pulse ---------- */
+.heart-pulse-icon {
+    font-size: 4rem;
+    display: inline-block;
+    filter: drop-shadow(0 4px 10px rgba(231, 84, 128, 0.35));
+    animation: heartBeatPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes heartBeatPulse {
+    0% { transform: scale(1); }
+    14% { transform: scale(1.18); }
+    28% { transform: scale(1); }
+    42% { transform: scale(1.18); }
+    70% { transform: scale(1); }
 }
 
 /* ---------- Floating Hearts Background Animation ---------- */
@@ -544,19 +776,20 @@
 /* ---------- Cupons de Amor (Ticket-style Cards) ---------- */
 .coupon-card {
     position: relative;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(231, 84, 128, 0.15);
+    border-radius: 18px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
     display: flex;
     overflow: hidden;
     margin-bottom: var(--space-md);
-    transition: all var(--transition-bounce);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.12);
 }
 
 .coupon-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-3px) scale(1.005);
+    box-shadow: 0 8px 24px rgba(231, 84, 128, 0.1);
+    border-color: rgba(231, 84, 128, 0.3);
 }
 
 /* Coupon Side Notches (Torn ticket effect) */
@@ -647,21 +880,23 @@
 /* Stamp styling for redeemed coupon */
 .coupon-stamp {
     position: absolute;
-    top: 50%;
-    left: 40%;
-    transform: translate(-50%, -50%) rotate(-12deg);
-    border: 3px double #e0536c;
+    top: 14px;
+    right: 14px;
+    transform: rotate(-10deg);
+    border: 2px solid #e0536c;
     color: #e0536c;
     font-family: var(--font-sans);
     text-transform: uppercase;
     font-weight: 800;
-    font-size: 13px;
-    padding: 4px 10px;
-    border-radius: var(--radius-sm);
-    letter-spacing: 2px;
-    opacity: 0.8;
+    font-size: 10px;
+    padding: 2.5px 7px;
+    border-radius: 4px;
+    letter-spacing: 1.5px;
+    opacity: 0.88;
+    background: rgba(255, 240, 243, 0.95); /* Mask underlying text */
     pointer-events: none;
     z-index: 3;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 /* Mobile responsive coupon vertical layout */
@@ -698,10 +933,6 @@
         background: rgba(255, 255, 255, 0.2);
     }
 
-    .coupon-stamp {
-        left: 50%;
-        top: 35%;
-    }
 }
 
 /* Pulsing Badge Button for Header */
@@ -965,4 +1196,156 @@ header .btn-anniversary:active {
         padding: 3px 10px;
         margin-bottom: var(--space-sm);
     }
+}
+
+/* ---------- Desktop Story Navigation Arrows ---------- */
+.story-desktop-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: var(--cinza-800);
+    font-size: 1.3rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 2015;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.story-desktop-nav-btn i {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    line-height: 0;
+}
+
+/* Optical centering correction */
+.story-desktop-nav-btn.prev i {
+    padding-right: 3px;
+}
+
+.story-desktop-nav-btn.next i {
+    padding-left: 3px;
+}
+
+.story-desktop-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+    color: var(--rosa-600);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 105, 180, 0.3);
+}
+
+.story-desktop-nav-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.story-desktop-nav-btn.prev {
+    left: calc(50% - 260px - 65px); /* Half card width (260px) + offset gap */
+}
+
+.story-desktop-nav-btn.next {
+    right: calc(50% - 260px - 65px);
+}
+
+/* Hide navigation arrows if the viewport is narrow or on mobile devices */
+@media (max-width: 680px) {
+    .story-desktop-nav-btn {
+        display: none !important;
+    }
+}
+
+/* ---------- Dynamic Floating Hearts ---------- */
+.floating-hearts-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1999; /* Behind card (2008) but on top of overlay background */
+}
+
+.floating-heart-dynamic {
+    position: absolute;
+    bottom: -60px;
+    pointer-events: none;
+    user-select: none;
+    animation: floatUpAnim ease-in forwards;
+    display: inline-block;
+}
+
+@keyframes floatUpAnim {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(0.8);
+        opacity: 0;
+    }
+    10% {
+        opacity: var(--start-opacity, 0.5);
+    }
+    90% {
+        opacity: var(--start-opacity, 0.5);
+    }
+    100% {
+        transform: translateY(-115vh) rotate(var(--rotate-deg, 360deg)) scale(1.1);
+        opacity: 0;
+    }
+}
+
+/* ---------- Coupons Modal custom scrollbar & button tweaks ---------- */
+#couponsModal .modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rosa-200) transparent;
+}
+
+#couponsModal .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+#couponsModal .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#couponsModal .modal-body::-webkit-scrollbar-thumb {
+    background-color: var(--rosa-200);
+    border-radius: 10px;
+}
+
+#couponsModal .modal-body::-webkit-scrollbar-thumb:hover {
+    background-color: var(--rosa-300);
+}
+
+.coupon-action .btn-redeem-coupon {
+    font-weight: 600 !important;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 10px rgba(231, 84, 128, 0.2);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.2) !important;
+}
+
+.coupon-action .btn-redeem-coupon:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 15px rgba(231, 84, 128, 0.38) !important;
+    filter: brightness(1.05);
+}
+
+.coupon-title {
+    font-family: var(--font-display) !important;
+    letter-spacing: 0.2px;
+}
+
+.coupon-card.redeemed {
+    background: rgba(255, 255, 255, 0.5) !important;
+    box-shadow: none !important;
+    border-color: rgba(0, 0, 0, 0.05) !important;
 }

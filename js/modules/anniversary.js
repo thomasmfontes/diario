@@ -3,7 +3,7 @@ import { getCurrentUser } from './user.js';
 import { showToast } from './ui.js';
 
 // Target date: 1st of July 2026
-const targetDate = new Date('2026-07-01T00:00:00');
+const targetDate = new Date('2026-06-01T00:00:00');
 
 // Dating start date: 1st of July 2025
 const startDate = new Date('2025-07-01T00:00:00');
@@ -21,6 +21,10 @@ let currentTrackIndex = 0;
 const audio = new Audio();
 audio.loop = false;
 
+// Voice audio for the love letter slide (Slide 5)
+const voiceAudio = new Audio('audio/Voz-diario.m4a');
+voiceAudio.loop = false;
+
 let currentSlideIndex = 0;
 let touchStartX = 0;
 let touchEndX = 0;
@@ -32,6 +36,18 @@ let statsData = { days: 365, memories: 0, letters: 0 };
 let anniversaryPhotos = [];
 const preloadedImages = {};
 let countdownInterval = null;
+
+// Gestures and Pause/Resume variables
+let isPaused = false;
+let pauseStartTime = 0;
+let slideStartTime = 0;
+let remainingTime = SLIDE_DURATION;
+let pressTimer = null;
+let isHolding = false;
+let lastTouchTime = 0;
+let heartInterval = null;
+let audioWasPlayingBeforePause = false;
+let fadeInterval = null; // Tracks audio fade transitions
 
 function preloadAnniversaryPhoto(index) {
     if (anniversaryPhotos.length === 0) return;
@@ -46,9 +62,9 @@ function preloadAnniversaryPhoto(index) {
 
 const loveLetterText = `Meu amor,
 
-Hoje celebramos 1 ano desde que decidimos começar a nossa jornada juntos, de mãos dadas. 365 dias repletos de sorrisos compartilhados, carinho sem limites, cumplicidade e momentos que agora vivem para sempre no nosso Diário e no meu coração.
+hoje celebramos 1 ano desde que decidimos começar a nossa jornada juntos, de mãos dadas. 365 dias repletos de sorrisos compartilhados, carinho sem limites, cumplicidade e momentos que agora vivem para sempre no nosso Diário e no meu coração.
 
-Obrigado por ser minha parceira de vida, por tornar meus dias mais bonitos e por me mostrar que o amor verdadeiro é leve, paciente e cheio de paz. Agradeço cada café da manhã, cada abraço e cada risada que me faz sentir em casa.
+Obrigado por ser minha parceira de vida, por tornar meus dias mais bonitos e por me mostrar que o amor verdadeiro é leve, paciente e cheio de paz. Agradeço cada beijinho, cada abraço e cada risada que me faz sentir em casa.
 
 Este é apenas o primeiro ano de muitos que ainda vamos construir juntos. Mal posso esperar pelo nosso futuro.
 
@@ -150,7 +166,7 @@ function initCouponsDB() {
             console.log('[Anniversary] Inicializando coleção de cupons de amor...');
             const defaultCoupons = [
                 { name: "Jantar Especial 🍕", description: "Um jantar romântico preparado pelo Thomas com menu personalizado.", status: "available", redeemedBy: null, redeemedAt: null },
-                { name: "Cinema VIP em Casa 🍿", description: "Sessão cinema com pipoca gourmet, doces e ela escolhe o filme sem veto.", status: "available", redeemedBy: null, redeemedAt: null },
+                { name: "Cinema VIP em Casa 🍿", description: "Sessão cinema com pipoca, doces e ela escolhe o filme sem veto.", status: "available", redeemedBy: null, redeemedAt: null },
                 { name: "Massagem de 30min 💆‍♀️", description: "Massagem relaxante com óleos perfumados e música tranquila.", status: "available", redeemedBy: null, redeemedAt: null },
                 { name: "Dia de Mimos Extremos ✨", description: "Um dia em que o Thomas faz todos os desejos razoáveis da Gabi.", status: "available", redeemedBy: null, redeemedAt: null },
                 { name: "Passeio Surpresa ✈️", description: "Um roteiro surpresa planejado inteiramente pelo Thomas para o final de semana.", status: "available", redeemedBy: null, redeemedAt: null },
@@ -264,6 +280,8 @@ function openAnniversaryOverlay() {
     if (overlay) {
         overlay.classList.add('active');
         overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Lock background scroll
+        startFloatingHearts();
         showSlide(0);
         loadStatsAndRender();
     }
@@ -274,9 +292,15 @@ function closeAnniversaryOverlay() {
     if (overlay) {
         overlay.classList.remove('active');
         overlay.style.display = 'none';
+        document.body.style.overflow = ''; // Restore background scroll
+        stopFloatingHearts();
         
-        // Stop audio
+        // Stop audio and voice
         audio.pause();
+        if (!voiceAudio.paused) {
+            voiceAudio.pause();
+            voiceAudio.currentTime = 0;
+        }
         
         // Clear slideshows, typewriters and auto-advance timers
         if (photoInterval) {
@@ -292,14 +316,163 @@ function closeAnniversaryOverlay() {
             slideTimeout = null;
         }
         
-        // Reset YouTube iframe to stop playback
-        const ytIframe = document.getElementById('anniversaryYoutubeVideo');
-        if (ytIframe) {
-            const src = ytIframe.src;
-            ytIframe.src = '';
-            ytIframe.src = src;
+        // Reset and stop local video
+        const localVideo = document.getElementById('anniversaryVideo');
+        if (localVideo) {
+            localVideo.pause();
+            localVideo.currentTime = 0;
         }
     }
+}
+
+function startFloatingHearts() {
+    const container = document.getElementById('anniversaryHearts');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Spawn a heart every 350ms for a dense and active stream
+    heartInterval = setInterval(() => {
+        const heart = document.createElement('span');
+        const heartTypes = ['❤️', '💖', '💕', '💗', '💓', '💘'];
+        heart.className = 'floating-heart-dynamic';
+        heart.textContent = heartTypes[Math.floor(Math.random() * heartTypes.length)];
+        
+        const left = Math.random() * 100;
+        const size = Math.random() * 22 + 12;
+        const duration = Math.random() * 5 + 4;
+        const opacity = Math.random() * 0.45 + 0.25;
+        const rotate = (Math.random() * 360) - 180;
+        
+        heart.style.left = `${left}%`;
+        heart.style.fontSize = `${size}px`;
+        heart.style.animationDuration = `${duration}s`;
+        heart.style.setProperty('--start-opacity', opacity);
+        heart.style.setProperty('--rotate-deg', `${rotate}deg`);
+        
+        container.appendChild(heart);
+        
+        setTimeout(() => {
+            heart.remove();
+        }, duration * 1000);
+    }, 350);
+}
+
+function stopFloatingHearts() {
+    if (heartInterval) {
+        clearInterval(heartInterval);
+        heartInterval = null;
+    }
+    const container = document.getElementById('anniversaryHearts');
+    if (container) container.innerHTML = '';
+}
+
+function triggerHeartBurst(count = 35) {
+    const container = document.getElementById('anniversaryHearts');
+    if (!container) return;
+    
+    for (let i = 0; i < count; i++) {
+        const heart = document.createElement('span');
+        const heartTypes = ['❤️', '💖', '💕', '💗', '💓', '💘', '💝'];
+        heart.className = 'floating-heart-dynamic';
+        heart.textContent = heartTypes[Math.floor(Math.random() * heartTypes.length)];
+        
+        const left = Math.random() * 100;
+        const size = Math.random() * 26 + 14; // Slightly larger for celebration!
+        const duration = Math.random() * 3 + 3; // Faster rise for explosion effect
+        const opacity = Math.random() * 0.6 + 0.3; // More visible
+        const rotate = (Math.random() * 360) - 180;
+        
+        heart.style.left = `${left}%`;
+        heart.style.fontSize = `${size}px`;
+        heart.style.animationDuration = `${duration}s`;
+        heart.style.setProperty('--start-opacity', opacity);
+        heart.style.setProperty('--rotate-deg', `${rotate}deg`);
+        
+        container.appendChild(heart);
+        
+        setTimeout(() => {
+            heart.remove();
+        }, duration * 1000);
+    }
+}
+
+// -------------------------------------------------------------
+// Video Slide — Play Overlay & Music Fade
+// -------------------------------------------------------------
+let videoEventsInitialized = false;
+
+function initVideoSlideEvents() {
+    if (videoEventsInitialized) return;
+    videoEventsInitialized = true;
+
+    const localVideo = document.getElementById('anniversaryVideo');
+    const playOverlay = document.getElementById('videoPlayOverlay');
+    const playBtn = document.getElementById('videoPlayBtn');
+
+    if (!localVideo || !playOverlay || !playBtn) return;
+
+    // Clicking the overlay button starts the video
+    playBtn.addEventListener('click', () => {
+        localVideo.play().catch(err => console.log('[Anniversary] Video play failed:', err));
+    });
+
+    // When video actually starts playing — hide overlay, fade music down to silence
+    localVideo.addEventListener('play', () => {
+        playOverlay.classList.add('hidden');
+        fadeTo(audio, audio.volume, 0, 1200, () => { audio.pause(); });
+    });
+
+    // When user pauses — fade music back up to full
+    localVideo.addEventListener('pause', () => {
+        if (!localVideo.ended) {
+            // Audio was paused — need to play it first, then fade in
+            audio.volume = 0;
+            audio.play().catch(() => {});
+            fadeTo(audio, 0, 1.0, 800);
+        }
+    });
+
+    // When video ends — restore music fully, show overlay (no auto-advance)
+    localVideo.addEventListener('ended', () => {
+        audio.volume = 0;
+        audio.play().catch(() => {});
+        fadeTo(audio, 0, 1.0, 1500);
+        playOverlay.classList.remove('hidden');
+    });
+}
+
+// -------------------------------------------------------------
+// Audio Fade Helper
+// -------------------------------------------------------------
+function fadeTo(audioEl, fromVol, toVol, durationMs, onComplete) {
+    if (!audioEl) return;
+    
+    // Cancel any existing fade on this element
+    if (audioEl._fadeInterval) {
+        clearInterval(audioEl._fadeInterval);
+        audioEl._fadeInterval = null;
+    }
+    
+    const steps = 30;
+    const stepTime = durationMs / steps;
+    const volumeDelta = (toVol - fromVol) / steps;
+    let currentStep = 0;
+    
+    audioEl.volume = Math.min(1, Math.max(0, fromVol));
+    
+    audioEl._fadeInterval = setInterval(() => {
+        currentStep++;
+        const newVol = Math.min(1, Math.max(0, fromVol + volumeDelta * currentStep));
+        audioEl.volume = newVol;
+        
+        if (currentStep >= steps) {
+            clearInterval(audioEl._fadeInterval);
+            audioEl._fadeInterval = null;
+            audioEl.volume = Math.min(1, Math.max(0, toVol));
+            if (onComplete) onComplete();
+        }
+    }, stepTime);
 }
 
 function showSlide(index) {
@@ -336,22 +509,60 @@ function showSlide(index) {
         }
     }
     
-    // Stop YouTube video if user leaves the video slide (Slide index 4)
-    const ytIframe = document.getElementById('anniversaryYoutubeVideo');
-    if (ytIframe && targetIndex !== 4) {
-        const src = ytIframe.src;
-        ytIframe.src = '';
-        ytIframe.src = src;
+    // Manage audio and video states on slide transitions
+    const localVideo = document.getElementById('anniversaryVideo');
+    if (targetIndex === 4) {
+        // Do NOT autoplay — wait for user to click the play overlay
+        // Ensure video is reset and paused when entering the slide
+        if (localVideo) {
+            localVideo.pause();
+            localVideo.currentTime = 0;
+        }
+        // Show the play overlay again when entering slide
+        const overlay = document.getElementById('videoPlayOverlay');
+        if (overlay) overlay.classList.remove('hidden');
+        // Initialize video events once (idempotent via flag)
+        initVideoSlideEvents();
+    } else {
+        // If leaving the video slide, pause the local video player
+        if (localVideo && !localVideo.paused) {
+            localVideo.pause();
+        }
+        // Resume background music if we are on any slide except the Cover Slide (Slide 0)
+        const storyOverlay = document.getElementById('anniversaryOverlay');
+        if (storyOverlay && storyOverlay.classList.contains('active') && targetIndex !== 0 && audio && audio.paused) {
+            audio.play().catch(err => console.log('[Anniversary] Failed to auto-resume music:', err));
+        }
+        // Restore music to full volume when leaving video slide
+        fadeTo(audio, audio.volume, 1.0, 800);
     }
     
-    // Slide 5: Typewriter letter
+    // Slide 5: Typewriter letter + voice audio (with fade on background music only)
     if (targetIndex === 5) {
+        // Fade background music down to 15%
+        fadeTo(audio, audio.volume, 0.15, 1500);
+        // Voice plays at full volume directly — no fade
+        voiceAudio.volume = 1.0;
+        voiceAudio.currentTime = 0;
+        voiceAudio.play().catch(err => console.log('[Anniversary] Voice audio blocked:', err));
         triggerLoveLetterTypewriter();
     } else {
+        // Stop voice audio immediately when leaving slide 5
+        if (!voiceAudio.paused) {
+            voiceAudio.pause();
+            voiceAudio.currentTime = 0;
+        }
+        // Fade background music back to full volume
+        fadeTo(audio, audio.volume, 1.0, 1500);
         if (typewriterInterval) {
             clearInterval(typewriterInterval);
             typewriterInterval = null;
         }
+    }
+    
+    // Slide 6 (Encerramento): Trigger a burst of hearts
+    if (targetIndex === 6) {
+        triggerHeartBurst(40);
     }
     
     updateProgressIndicator();
@@ -360,6 +571,8 @@ function showSlide(index) {
     const footerControls = document.querySelector('.story-footer-controls');
     const prevZone = document.getElementById('storyPrevZone');
     const nextZone = document.getElementById('storyNextZone');
+    const desktopNext = document.getElementById('desktopNextBtn');
+    const desktopPrev = document.getElementById('desktopPrevBtn');
     
     if (footerControls) {
         footerControls.style.display = targetIndex === 0 ? 'none' : 'flex';
@@ -369,6 +582,12 @@ function showSlide(index) {
     }
     if (nextZone) {
         nextZone.style.pointerEvents = targetIndex === 0 ? 'none' : 'auto';
+    }
+    if (desktopNext) {
+        desktopNext.style.display = targetIndex === 0 ? 'none' : 'flex';
+    }
+    if (desktopPrev) {
+        desktopPrev.style.display = targetIndex === 0 ? 'none' : 'flex';
     }
 }
 
@@ -401,13 +620,18 @@ function updateProgressIndicator() {
             // Force browser reflow to reset width to 0% immediately
             void fill.offsetHeight;
             
-            // Auto-advance config: Slide 0 (Intro), 3 (Photos), 4 (Video), and 5 (Letter) do NOT auto-advance
-            const shouldAutoAdvance = currentSlideIndex !== 0 && currentSlideIndex !== 3 && currentSlideIndex !== 4 && currentSlideIndex !== 5;
+            // Auto-advance config: Slide 0 (Intro), 3 (Photos), 4 (Video), 5 (Letter), and 6 (End) do NOT auto-advance
+            const shouldAutoAdvance = currentSlideIndex !== 0 && currentSlideIndex !== 3 && currentSlideIndex !== 4 && currentSlideIndex !== 5 && currentSlideIndex !== 6;
             
             if (shouldAutoAdvance) {
                 // Animate progress width from 0% to 100% over SLIDE_DURATION
                 fill.style.transition = `width ${SLIDE_DURATION}ms linear`;
                 fill.style.width = '100%';
+                
+                // Track start time for pause/resume gestures
+                slideStartTime = Date.now();
+                remainingTime = SLIDE_DURATION;
+                isPaused = false;
                 
                 // Trigger next slide after duration
                 slideTimeout = setTimeout(() => {
@@ -428,16 +652,34 @@ function initSlideshowControls() {
     const btnStart = document.getElementById('startStoryBtn');
     const btnStoryTrigger = document.getElementById('btn-story');
     
-    // Next/Prev Zones (Instagram style)
-    const zoneNext = document.getElementById('storyNextZone');
-    const zonePrev = document.getElementById('storyPrevZone');
+    // Desktop Nav Arrow Buttons
+    const btnDesktopNext = document.getElementById('desktopNextBtn');
+    const btnDesktopPrev = document.getElementById('desktopPrevBtn');
     
     if (btnNext) btnNext.addEventListener('click', (e) => { e.stopPropagation(); showSlide(currentSlideIndex + 1); });
     if (btnPrev) btnPrev.addEventListener('click', (e) => { e.stopPropagation(); showSlide(currentSlideIndex - 1); });
+    if (btnDesktopNext) btnDesktopNext.addEventListener('click', (e) => { e.stopPropagation(); showSlide(currentSlideIndex + 1); });
+    if (btnDesktopPrev) btnDesktopPrev.addEventListener('click', (e) => { e.stopPropagation(); showSlide(currentSlideIndex - 1); });
     if (btnClose) btnClose.addEventListener('click', (e) => { e.stopPropagation(); closeAnniversaryOverlay(); });
     
-    if (zoneNext) zoneNext.addEventListener('click', () => showSlide(currentSlideIndex + 1));
-    if (zonePrev) zonePrev.addEventListener('click', () => showSlide(currentSlideIndex - 1));
+    // Final Slide Buttons
+    const btnFinalCoupons = document.getElementById('finalOpenCouponsBtn');
+    const btnFinalClose = document.getElementById('finalCloseBtn');
+    
+    if (btnFinalCoupons) {
+        btnFinalCoupons.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAnniversaryOverlay();
+            const modal = new bootstrap.Modal(document.getElementById('couponsModal'));
+            modal.show();
+        });
+    }
+    if (btnFinalClose) {
+        btnFinalClose.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAnniversaryOverlay();
+        });
+    }
     
     if (btnStart) btnStart.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -457,6 +699,21 @@ function initSlideshowControls() {
             modal.show();
         });
     }
+    
+    // Sync local video playback with story progress bar and auto-advance
+    const localVideo = document.getElementById('anniversaryVideo');
+    if (localVideo) {
+        localVideo.addEventListener('timeupdate', () => {
+            if (currentSlideIndex === 4 && localVideo.duration) {
+                const fill = document.querySelector(`#chunk-4 .story-progress-fill`);
+                if (fill) {
+                    const percentage = (localVideo.currentTime / localVideo.duration) * 100;
+                    fill.style.transition = 'none';
+                    fill.style.width = `${percentage}%`;
+                }
+            }
+        });
+    }
 }
 
 // -------------------------------------------------------------
@@ -465,6 +722,11 @@ function initSlideshowControls() {
 function initAudioControls() {
     audio.addEventListener('ended', () => {
         playNextTrack();
+    });
+    
+    // When the voice letter finishes playing naturally, fade background music back to full volume
+    voiceAudio.addEventListener('ended', () => {
+        fadeTo(audio, audio.volume, 1.0, 1500);
     });
     
     audio.addEventListener('error', () => {
@@ -502,23 +764,207 @@ function playNextTrack() {
 }
 
 // -------------------------------------------------------------
-// Swipe & Keyboard controls
+// Swipe & Gesture (Instagram Story style) controls
 // -------------------------------------------------------------
-function initSwipeControls() {
-    const overlay = document.getElementById('anniversaryOverlay');
-    if (!overlay) return;
+function handlePressStart(e) {
+    // Filter simulated mouse down events on touch devices to prevent ghost clicks
+    if (e.type === 'mousedown' && Date.now() - lastTouchTime < 600) {
+        return;
+    }
+    if (e.type === 'touchstart') {
+        lastTouchTime = Date.now();
+    }
+
+    // Avoid triggering on buttons, close button, inputs, video, iframes, etc.
+    if (e.target.closest('#storyCloseBtn') || 
+        e.target.closest('#startStoryBtn') || 
+        e.target.closest('.story-footer-controls') || 
+        e.target.closest('.video-wrapper') || 
+        e.target.closest('video') || 
+        e.target.closest('iframe') || 
+        e.target.closest('.btn') || 
+        e.target.closest('button')) {
+        return;
+    }
+
+    pauseStartTime = Date.now();
+    isHolding = false;
     
-    overlay.addEventListener('touchstart', e => {
+    // Set a timer to detect if this is a hold (longer than 200ms)
+    if (pressTimer) clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => {
+        isHolding = true;
+        
+        // Pause auto-advance timeline
+        const activeSlide = document.querySelector('.anniversary-slide.active');
+        if (activeSlide) {
+            const shouldAutoAdvance = currentSlideIndex !== 0 && currentSlideIndex !== 3 && currentSlideIndex !== 4 && currentSlideIndex !== 5 && currentSlideIndex !== 6;
+            const fill = document.querySelector(`#chunk-${currentSlideIndex} .story-progress-fill`);
+            
+            if (shouldAutoAdvance && fill) {
+                const elapsed = Date.now() - slideStartTime;
+                remainingTime = Math.max(0, SLIDE_DURATION - elapsed);
+                
+                // Freeze progress bar
+                const pct = (elapsed / SLIDE_DURATION) * 100;
+                fill.style.transition = 'none';
+                fill.style.width = `${Math.min(100, pct)}%`;
+                
+                if (slideTimeout) {
+                    clearTimeout(slideTimeout);
+                    slideTimeout = null;
+                }
+                isPaused = true;
+            }
+            
+            // Pause media only on hold
+            if (currentSlideIndex === 4) {
+                const localVideo = document.getElementById('anniversaryVideo');
+                if (localVideo && !localVideo.paused) {
+                    localVideo.pause();
+                }
+            } else if (audio && !audio.paused) {
+                audio.pause();
+            }
+        }
+    }, 200);
+}
+
+function handlePressEnd(e) {
+    // Filter simulated mouse up events on touch devices
+    if (e.type === 'mouseup' && Date.now() - lastTouchTime < 600) {
+        return;
+    }
+
+    // Avoid triggering on buttons, close button, inputs, video, iframes, etc.
+    if (e.target.closest('#storyCloseBtn') || 
+        e.target.closest('#startStoryBtn') || 
+        e.target.closest('.story-footer-controls') || 
+        e.target.closest('.video-wrapper') || 
+        e.target.closest('video') || 
+        e.target.closest('iframe') || 
+        e.target.closest('.btn') || 
+        e.target.closest('button')) {
+        return;
+    }
+
+    if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    }
+    
+    if (isHolding) {
+        // Resume media depending on active slide
+        if (currentSlideIndex === 4) {
+            const localVideo = document.getElementById('anniversaryVideo');
+            if (localVideo && localVideo.paused) {
+                localVideo.play().catch(err => console.log('[Anniversary] Video resume failed:', err));
+            }
+        } else if (audio && audio.src && audio.paused) {
+            audio.play().catch(err => console.log('[Anniversary] Audio resume failed:', err));
+        }
+        
+        const shouldAutoAdvance = currentSlideIndex !== 0 && currentSlideIndex !== 3 && currentSlideIndex !== 4 && currentSlideIndex !== 5 && currentSlideIndex !== 6;
+        
+        if (isPaused && shouldAutoAdvance) {
+            const fill = document.querySelector(`#chunk-${currentSlideIndex} .story-progress-fill`);
+            if (fill) {
+                const elapsed = SLIDE_DURATION - remainingTime;
+                slideStartTime = Date.now() - elapsed;
+                
+                // Resume progress transition
+                fill.style.transition = `width ${remainingTime}ms linear`;
+                fill.style.width = '100%';
+                
+                slideTimeout = setTimeout(() => {
+                    showSlide(currentSlideIndex + 1);
+                }, remainingTime);
+            }
+            isPaused = false;
+        }
+        isHolding = false;
+        pauseStartTime = 0;
+        return; // Swiped/held, do not navigate!
+    }
+    
+    const pressDuration = pauseStartTime ? (Date.now() - pauseStartTime) : 0;
+    pauseStartTime = 0;
+    
+    // If it was a short press (less than 200ms) AND it wasn't a swipe, navigate (mobile/touch only)!
+    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const xCoord = e.changedTouches ? e.changedTouches[0].screenX : clientX;
+    const deltaX = touchStartX ? Math.abs(xCoord - touchStartX) : 0;
+    
+    if (currentSlideIndex === 0) return; // Prevent card tap navigation on Cover Slide (Slide 0)
+    if (currentSlideIndex === 4) return; // Video slide: no tap navigation, user controls video manually
+    if (e.type === 'touchend' && pressDuration < 200 && deltaX < 15) {
+        const screenWidth = window.innerWidth;
+        // Left 33% goes back, right 67% goes forward
+        if (clientX < screenWidth * 0.33) {
+            showSlide(currentSlideIndex - 1);
+        } else {
+            showSlide(currentSlideIndex + 1);
+        }
+    }
+}
+
+function initSwipeControls() {
+    const card = document.querySelector('.anniversary-card');
+    if (!card) return;
+    
+    // Touch events for mobile
+    card.addEventListener('touchstart', e => {
         touchStartX = e.changedTouches[0].screenX;
+        handlePressStart(e);
     }, { passive: true });
     
-    overlay.addEventListener('touchend', e => {
+    card.addEventListener('touchend', e => {
         touchEndX = e.changedTouches[0].screenX;
         handleSwipeGesture();
+        handlePressEnd(e);
     }, { passive: true });
+
+    // Mouse events for desktop
+    card.addEventListener('mousedown', e => {
+        touchStartX = e.clientX; // simulate touchStartX for swipe delta check
+        handlePressStart(e);
+    });
+    
+    card.addEventListener('mouseup', e => {
+        handlePressEnd(e);
+    });
+    
+    card.addEventListener('mouseleave', () => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+        if (isPaused) {
+            pauseStartTime = 0;
+            const shouldAutoAdvance = currentSlideIndex !== 0 && currentSlideIndex !== 3 && currentSlideIndex !== 4 && currentSlideIndex !== 5 && currentSlideIndex !== 6;
+            if (shouldAutoAdvance) {
+                const fill = document.querySelector(`#chunk-${currentSlideIndex} .story-progress-fill`);
+                if (fill) {
+                    const elapsed = SLIDE_DURATION - remainingTime;
+                    slideStartTime = Date.now() - elapsed;
+                    fill.style.transition = `width ${remainingTime}ms linear`;
+                    fill.style.width = '100%';
+                    slideTimeout = setTimeout(() => { showSlide(currentSlideIndex + 1); }, remainingTime);
+                }
+            }
+            // Resume audio if it is paused
+            if (audio && audio.src && audio.paused) {
+                audio.play().catch(() => {});
+            }
+            isPaused = false;
+        }
+        isHolding = false;
+    });
 }
 
 function handleSwipeGesture() {
+    if (currentSlideIndex === 0) return; // Prevent swipe gestures on Cover Slide (Slide 0)
+    if (currentSlideIndex === 4) return; // Video slide: no swipe navigation
     const swipeThreshold = 50;
     if (touchStartX - touchEndX > swipeThreshold) {
         showSlide(currentSlideIndex + 1); // Swipe Left -> Next
@@ -532,8 +978,10 @@ function initKeyboardControls() {
         const overlay = document.getElementById('anniversaryOverlay');
         if (overlay && overlay.classList.contains('active')) {
             if (e.key === 'ArrowRight' || e.key === 'Space') {
+                if (currentSlideIndex === 0) return; // Prevent keyboard navigation on Slide 0
                 showSlide(currentSlideIndex + 1);
             } else if (e.key === 'ArrowLeft') {
+                if (currentSlideIndex === 0) return; // Prevent keyboard navigation on Slide 0
                 showSlide(currentSlideIndex - 1);
             } else if (e.key === 'Escape') {
                 closeAnniversaryOverlay();
@@ -601,22 +1049,12 @@ async function loadStatsAndRender() {
             }
         });
 
-        // Find busiest month
-        let busiestMonth = 'Nenhum';
-        let maxMonthCount = 0;
-        for (const [month, count] of Object.entries(monthCounts)) {
-            if (count > maxMonthCount) {
-                maxMonthCount = count;
-                busiestMonth = month;
-            }
-        }
-        
-        console.log(`[Anniversary] Estatísticas calculadas: total de memórias = ${totalMemories}, Thomas = ${thomasCount}, Gabriela = ${gabiCount}, mês mais movimentado = ${busiestMonth} (${maxMonthCount} memórias)`);
+        console.log(`[Anniversary] Estatísticas calculadas: total de memórias = ${totalMemories}, Thomas = ${thomasCount}, Gabriela = ${gabiCount}`);
 
-        // Update stats description with contributions and busiest month
+        // Update stats description with contributions
         const statsDescEl = document.querySelector('#slide-1 p.text-muted');
         if (statsDescEl) {
-            statsDescEl.innerHTML = `Tudo o que construímos juntos no último ano...<br><span class="small text-pink" style="font-size: 0.8rem; color: var(--rosa-500); font-weight: 600;">Thomas: ${thomasCount} | Gabi: ${gabiCount}<br>Mês mais ativo: ${busiestMonth} (${maxMonthCount} lembranças)</span>`;
+            statsDescEl.innerHTML = `Tudo o que construímos juntos no último ano...<br><span class="small text-pink" style="font-size: 0.8rem; color: var(--rosa-500); font-weight: 600;">Thomas: ${thomasCount} | Gabi: ${gabiCount}</span>`;
         }
 
         // Start preloading the first 8 photos immediately in the background
@@ -752,7 +1190,7 @@ function initPhotoSlideshow() {
         const dateStr = photo.date ? new Date(photo.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
         
         cardEl.innerHTML = `
-            <div class="polaroid-image-area" style="width: 100%; height: 200px; border-radius: 2px; overflow: hidden; position: relative; background: #111;">
+            <div class="polaroid-image-area" style="width: 100%; height: 230px; border-radius: 2px; overflow: hidden; position: relative; background: #111;">
                 <img src="${photo.src}" class="ken-burns-img" style="width: 100%; height: 100%; object-fit: cover; animation: kenburns-zoom 6s ease-out forwards;">
             </div>
             <div class="polaroid-caption" style="margin-top: 10px; font-size: 0.85rem; pointer-events: none;">
@@ -809,7 +1247,7 @@ function triggerLoveLetterTypewriter() {
             clearInterval(typewriterInterval);
             typewriterInterval = null;
         }
-    }, 45);
+    }, 75);
 }
 
 // -------------------------------------------------------------
@@ -821,9 +1259,25 @@ function initCouponsUI() {
 }
 
 function listenToCoupons() {
+    let isFirstLoad = true;
+    
     db.collection('coupons').onSnapshot(snapshot => {
         const container = document.getElementById('couponsContainer');
         if (!container) return;
+        
+        // Show a real-time toast alert if the partner redeems a coupon
+        const currentUser = getCurrentUser();
+        if (!isFirstLoad) {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'modified') {
+                    const coupon = change.doc.data();
+                    if (coupon.status === 'redeemed' && coupon.redeemedBy && coupon.redeemedBy !== currentUser) {
+                        showToast(`💖 ${coupon.redeemedBy} resgatou o cupom: "${coupon.name}"!`, 'success');
+                    }
+                }
+            });
+        }
+        isFirstLoad = false;
         
         if (snapshot.empty) {
             container.innerHTML = `<div class="text-center text-muted p-4">Nenhum cupom cadastrado.</div>`;
@@ -836,6 +1290,9 @@ function listenToCoupons() {
             const docId = doc.id;
             
             const isRedeemed = coupon.status === 'redeemed';
+            const stampText = isRedeemed 
+                ? (coupon.redeemedBy === currentUser ? 'Resgatado por você' : `Resgatado por ${coupon.redeemedBy}`)
+                : '';
             
             html += `
             <div class="coupon-card ${isRedeemed ? 'redeemed' : 'available'}">
@@ -843,13 +1300,13 @@ function listenToCoupons() {
                     <div class="coupon-watermark">❤️</div>
                     <h6 class="coupon-title fw-bold mb-1" style="font-size: 0.95rem;">${coupon.name}</h6>
                     <p class="small text-muted mb-0" style="font-size: 0.8rem; line-height: 1.4;">${coupon.description}</p>
-                    ${isRedeemed ? `<div class="coupon-stamp">Resgatado</div>` : ''}
+                    ${isRedeemed ? `<div class="coupon-stamp">${stampText}</div>` : ''}
                 </div>
                 <div class="coupon-divider"></div>
                 <div class="coupon-action">
                     ${isRedeemed 
                         ? `<button class="btn btn-sm btn-secondary rounded-pill px-3" disabled style="font-size: 0.78rem;">Usado</button>` 
-                        : `<button class="btn btn-sm btn-primary rounded-pill px-3 btn-redeem-coupon" data-id="${docId}" style="font-size: 0.78rem; background: linear-gradient(135deg, var(--rosa-500) 0%, var(--rosa-600) 100%); border: none;">Resgatar</button>`}
+                        : `<button class="btn btn-sm btn-primary rounded-pill px-3 btn-redeem-coupon" data-id="${docId}" data-name="${coupon.name}" style="font-size: 0.78rem; background: linear-gradient(135deg, var(--rosa-500) 0%, var(--rosa-600) 100%); border: none;">Resgatar</button>`}
                 </div>
             </div>
             `;
@@ -865,22 +1322,41 @@ function initCouponRedemption() {
     const container = document.getElementById('couponsContainer');
     if (!container) return;
     
-    // Prevent double listener bindings
-    const newContainer = container.cloneNode(true);
-    container.parentNode.replaceChild(newContainer, container);
-    
-    newContainer.addEventListener('click', async e => {
-        if (e.target.classList.contains('btn-redeem-coupon')) {
-            const docId = e.target.getAttribute('data-id');
-            const user = getCurrentUser();
-            
-            if (!user || (user !== 'Thomas' && user !== 'Gabriela')) {
-                showToast('Identifique-se primeiro clicando no topo direito!', 'warning');
-                return;
+    // Setup listener to reopen coupons modal if user selects profile
+    const userSelectModalEl = document.getElementById('userSelectModal');
+    if (userSelectModalEl && !window._userSelectReopenCouponsBound) {
+        window._userSelectReopenCouponsBound = true;
+        userSelectModalEl.addEventListener('hidden.bs.modal', () => {
+            if (window.reopenCouponsAfterUserSelect) {
+                window.reopenCouponsAfterUserSelect = false;
+                setTimeout(() => {
+                    const couponsModalEl = document.getElementById('couponsModal');
+                    if (couponsModalEl) {
+                        const couponsModal = bootstrap.Modal.getOrCreateInstance(couponsModalEl);
+                        couponsModal.show();
+                    }
+                }, 180);
             }
+        });
+    }
+    
+    // Reference confirm modal element
+    const confirmRedeemModalEl = document.getElementById('confirmRedeemModal');
+    
+    // Setup click handler for custom confirm submit button
+    const btnConfirmRedeem = document.getElementById('btnConfirmRedeemSubmit');
+    if (btnConfirmRedeem && !window._confirmRedeemSubmitBound) {
+        window._confirmRedeemSubmitBound = true;
+        btnConfirmRedeem.addEventListener('click', async () => {
+            const docId = window.pendingRedeemDocId;
+            const user = window.pendingRedeemUser;
+            if (!docId || !user) return;
             
-            if (!confirm('Deseja mesmo resgatar este cupom de amor? Seu parceiro receberá uma notificação na hora!')) {
-                return;
+            // Hide confirmRedeemModal
+            const confirmModalEl = document.getElementById('confirmRedeemModal');
+            if (confirmModalEl) {
+                const confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
+                confirmModal.hide();
             }
             
             try {
@@ -910,7 +1386,7 @@ function initCouponRedemption() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        title: '🎟️ Cupom de Amor Resgatado!',
+                        title: '🎟️ Cupom de Amor Resgatados!',
                         body: `${user} resgatou o cupom: ${couponData.name}`,
                         authorName: user
                     })
@@ -927,6 +1403,55 @@ function initCouponRedemption() {
             } catch (err) {
                 console.error('[Anniversary] Erro ao resgatar cupom:', err);
                 showToast('Erro ao resgatar cupom.', 'danger');
+            }
+        });
+    }
+    
+    // Prevent double listener bindings
+    const newContainer = container.cloneNode(true);
+    container.parentNode.replaceChild(newContainer, container);
+    
+    newContainer.addEventListener('click', async e => {
+        if (e.target.classList.contains('btn-redeem-coupon')) {
+            const docId = e.target.getAttribute('data-id');
+            const user = getCurrentUser();
+            
+            if (!user || (user !== 'Thomas' && user !== 'Gabriela')) {
+                showToast('Identifique-se para resgatar este cupom! 👤', 'warning');
+                
+                // Hide coupons modal
+                const couponsModalEl = document.getElementById('couponsModal');
+                if (couponsModalEl) {
+                    const couponsModal = bootstrap.Modal.getOrCreateInstance(couponsModalEl);
+                    couponsModal.hide();
+                }
+                
+                // Set flag to reopen
+                window.reopenCouponsAfterUserSelect = true;
+                
+                // Open userSelectModal
+                if (userSelectModalEl) {
+                    const userSelectModal = bootstrap.Modal.getOrCreateInstance(userSelectModalEl);
+                    userSelectModal.show();
+                }
+                return;
+            }
+            
+            // Set pending data
+            window.pendingRedeemDocId = docId;
+            window.pendingRedeemUser = user;
+            
+            // Update confirm modal text
+            const couponName = e.target.getAttribute('data-name') || 'este cupom';
+            const confirmTextEl = document.getElementById('confirmRedeemText');
+            if (confirmTextEl) {
+                confirmTextEl.innerHTML = `Deseja mesmo resgatar o cupom <strong>"${couponName}"</strong>?`;
+            }
+            
+            // Open confirm modal on top of coupons modal
+            if (confirmRedeemModalEl) {
+                const confirmModal = bootstrap.Modal.getOrCreateInstance(confirmRedeemModalEl);
+                confirmModal.show();
             }
         }
     });

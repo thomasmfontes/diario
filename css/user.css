@@ -60,22 +60,21 @@
 }
 
 /* Modal Animation */
+.modal.fade {
+    transition: opacity 0.28s ease-in-out !important;
+}
+
+.modal-backdrop.fade {
+    transition: opacity 0.28s ease-in-out !important;
+}
+
 .modal.fade .modal-dialog {
-    transition: transform var(--transition-slow) ease-out, opacity var(--transition-slow) ease-out;
+    opacity: 0;
+    transform: translateY(-25px) scale(0.97);
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.28s ease-in-out !important;
 }
 
 .modal.show .modal-dialog {
-    animation: modalSlideIn var(--transition-slow) ease-out;
-}
-
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px) scale(0.95);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    opacity: 1;
+    transform: translateY(0) scale(1);
 }

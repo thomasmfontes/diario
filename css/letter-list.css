@@ -3,6 +3,9 @@
     padding: 0 !important;
     background: var(--bgCarta);
     border-radius: var(--radius-xl);
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
 }
 
 #cartinhasModal .modal-header {
@@ -235,8 +238,47 @@
 }
 
 /* ========== Skeleton Loading ========== */
+.carta-item-skeleton {
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px dashed rgba(231, 84, 128, 0.15);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.skeleton-header {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.skeleton-chip {
+    width: 85px;
+    height: 22px;
+    border-radius: 6px;
+    background: linear-gradient(90deg,
+            var(--cinza-100) 25%,
+            var(--cinza-50) 50%,
+            var(--cinza-100) 75%);
+    background-size: 200% 100%;
+    animation: shimmerSkeleton 1.2s infinite;
+}
+
 .skeleton-line {
     height: 14px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(90deg,
+            var(--cinza-100) 25%,
+            var(--cinza-50) 50%,
+            var(--cinza-100) 75%);
+    background-size: 200% 100%;
+    animation: shimmerSkeleton 1.2s infinite;
+}
+
+.skeleton-date {
+    width: 120px;
+    height: 12px;
     border-radius: var(--radius-sm);
     background: linear-gradient(90deg,
             var(--cinza-100) 25%,

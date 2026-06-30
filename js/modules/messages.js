@@ -4,6 +4,8 @@ import { getCurrentUser } from './user.js';
 
 let unsubscribeCartinhas = null;
 let currentMessageDoc = null;
+let cachedLetters = [];
+let activeFilter = 'todas';
 
 export function initMessages() {
     const btnCartinhas = document.getElementById('btn-cartinhas');
@@ -19,9 +21,10 @@ export function initMessages() {
     btnCartinhas.addEventListener('click', () => {
         cartinhasModal.show();
         const salvo = localStorage.getItem('filtroCartinhas') || 'todas';
+        activeFilter = salvo;
         const r = document.querySelector(`input[name="filtroCartinhas"][value="${salvo}"]`);
         if (r) r.checked = true;
-        carregarCartinhas(salvo);
+        iniciarEscutaCartinhas();
     });
 
     // Troca de filtro
@@ -29,7 +32,8 @@ export function initMessages() {
         r.addEventListener('change', (e) => {
             const v = e.target.value;
             localStorage.setItem('filtroCartinhas', v);
-            carregarCartinhas(v);
+            activeFilter = v;
+            renderCartinhas();
         })
     );
 
@@ -89,53 +93,69 @@ export function initMessages() {
     });
 }
 
-function carregarCartinhas(destino) {
+function iniciarEscutaCartinhas() {
     const listaCartinhas = document.getElementById('lista-cartinhas');
     const skeletonCartinhas = document.getElementById('skeleton-cartinhas');
 
     if (unsubscribeCartinhas) { unsubscribeCartinhas(); unsubscribeCartinhas = null; }
 
-    let ref = db.collection('messages');
-    if (destino && destino !== 'todas') ref = ref.where('to', '==', destino); // precisa índice com orderBy
-    ref = ref.orderBy('createdAt', 'desc');
-
     listaCartinhas.innerHTML = '';
     skeletonCartinhas?.classList.remove('d-none');
 
+    const ref = db.collection('messages').orderBy('createdAt', 'desc');
+
     unsubscribeCartinhas = ref.onSnapshot(snap => {
         skeletonCartinhas?.classList.add('d-none');
-        listaCartinhas.innerHTML = '';
-
-        if (snap.empty) {
-            listaCartinhas.innerHTML = '<div class="text-center text-muted py-3">Nenhuma cartinha.</div>';
-            return;
-        }
+        cachedLetters = [];
 
         snap.forEach(doc => {
-            const d = doc.data();
-            const dtObj = d.createdAt?.toDate ? d.createdAt.toDate() : null;
-            const dt = dtObj
-                ? `${dtObj.toLocaleDateString('pt-BR')} - ${dtObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
-                : '(sem data)';
-
-            const el = document.createElement('div');
-            el.className = 'carta-item';
-            el.innerHTML = `
-    <div class="linha">
-      <span class="chip de">De: ${d.from || '-'}</span>
-      <span class="chip ${d.to === 'Thomas' ? 'para-thomas' : 'para-gabriela'}">Para: ${d.to || '-'}</span>
-      <span class="chip status ${d.read ? 'lida' : 'nao-lida'}">${d.read ? 'Lida' : 'Não lida'}</span>
-    </div>
-    <div class="texto">${(d.text || '').trim()}</div>
-    <div class="data">${dt}</div>
-  `;
-            listaCartinhas.appendChild(el);
+            cachedLetters.push({
+                id: doc.id,
+                ...doc.data()
+            });
         });
 
+        renderCartinhas();
     }, err => {
         skeletonCartinhas?.classList.add('d-none');
         console.error(err);
         listaCartinhas.innerHTML = `<div class="text-danger">Erro: ${err.message}</div>`;
+    });
+}
+
+function renderCartinhas() {
+    const listaCartinhas = document.getElementById('lista-cartinhas');
+    if (!listaCartinhas) return;
+
+    listaCartinhas.innerHTML = '';
+
+    const filtered = activeFilter === 'todas'
+        ? cachedLetters
+        : cachedLetters.filter(d => d.to === activeFilter);
+
+    if (filtered.length === 0) {
+        listaCartinhas.innerHTML = '<div class="text-center text-muted py-3">Nenhuma cartinha.</div>';
+        return;
+    }
+
+    filtered.forEach(d => {
+        const dtObj = d.createdAt?.toDate ? d.createdAt.toDate() : null;
+        const dt = dtObj
+            ? `${dtObj.toLocaleDateString('pt-BR')} - ${dtObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+            : '(sem data)';
+
+        const el = document.createElement('div');
+        el.className = 'carta-item';
+        el.innerHTML = `
+            <div class="linha">
+              <span class="chip de">De: ${d.from || '-'}</span>
+              <span class="chip ${d.to === 'Thomas' ? 'para-thomas' : 'para-gabriela'}">Para: ${d.to || '-'}</span>
+              <span class="chip status ${d.read ? 'lida' : 'nao-lida'}">${d.read ? 'Lida' : 'Não lida'}</span>
+            </div>
+            <div class="texto">${(d.text || '').trim()}</div>
+            <div class="data">${dt}</div>
+        `;
+        listaCartinhas.appendChild(el);
     });
 }
 

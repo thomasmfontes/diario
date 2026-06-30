@@ -1256,6 +1256,40 @@ function triggerLoveLetterTypewriter() {
 function initCouponsUI() {
     listenToCoupons();
     initCouponRedemption();
+
+    // Check if user requested database reset
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('resetCoupons') === 'true') {
+        resetAllCoupons();
+    }
+}
+
+async function resetAllCoupons() {
+    try {
+        const querySnapshot = await db.collection('coupons').get();
+        if (querySnapshot.empty) return;
+        
+        // Use a Firestore batch to update all documents in a single transaction
+        const batch = db.batch();
+        querySnapshot.forEach(doc => {
+            batch.update(doc.ref, {
+                status: 'available',
+                redeemedBy: null,
+                redeemedAt: null
+            });
+        });
+        await batch.commit();
+        showToast('🔄 Todos os cupons foram restaurados!', 'success');
+        
+        // Clean URL and reload after 1.5 seconds
+        setTimeout(() => {
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.location.href = cleanUrl;
+        }, 1500);
+    } catch (err) {
+        console.error('[Anniversary] Erro ao resetar cupons:', err);
+        showToast('Erro ao resetar cupons no Firestore.', 'danger');
+    }
 }
 
 function listenToCoupons() {

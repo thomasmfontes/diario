@@ -1,10 +1,10 @@
 import { getCurrentUser, initUserSystem, updateUserUI } from './modules/user.js';
 import { initMemories, loadMemories } from './modules/memories.js';
-import { initMessages, checkForMessage } from './modules/messages.js?v=44';
+import { initMessages, checkForMessage } from './modules/messages.js?v=45';
 import { initSpellCheck } from './modules/spellcheck.js';
 import { initPendingSwipers, showToast } from './modules/ui.js';
 import { initNotifications, removeNotifications } from './modules/notifications.js';
-import { initAnniversary } from './modules/anniversary.js?v=44';
+import { initAnniversary } from './modules/anniversary.js?v=45';
 
 let swRegistration = null;
 
